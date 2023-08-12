@@ -1,0 +1,20 @@
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: postgres.dockerfile
+    image: "postgres-tutorials"
+    container_name: postgres-lph
+    environment:
+      POSTGRES_DB: iplogger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: ${PGDATA}
+    volumes:
+       - dbtuto:/data/postgres-tuto
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+volumes:
+    dbtuto:
+      external: true
