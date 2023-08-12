@@ -8,12 +8,12 @@ from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
 from app.Util import CheckIP
-import app.curd, app.schemas
+import app.curd as curd, app.schemas as schemas
 from jose import JWTError, jwt
-from database import SessionLocal
+from app.database import SessionLocal
 # from dotenv import load_dotenv
 import os
-import model
+import app.model as model
 from sqlalchemy.orm import Session
 uri_path= '/app/app/image/'
 '''

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-import app.model, app.schemas
+import app.model as model
+import  app.schemas as schemas
 from sqlalchemy import desc
 import string, random, datetime
 from typing import Union, Annotated
@@ -10,7 +11,7 @@ from fastapi import HTTPException,status, Depends
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
 # from dotenv import load_dotenv
-from database import SessionLocal
+from app.database import SessionLocal
 import os
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"

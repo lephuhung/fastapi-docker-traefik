@@ -4,8 +4,8 @@ import httpagentparser
 import string
 import random
 import datetime
-import curd
-import schemas
+import app.curd as curd
+import app.schemas as schemas
 from sqlalchemy.orm import Session
 config = {
     # BASE CONFIG #
