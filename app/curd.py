@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-import model, schemas
+import app.model, app.schemas
 from sqlalchemy import desc
 import string, random, datetime
 from typing import Union, Annotated

@@ -7,15 +7,15 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
-from Utils import CheckIP, generate_random_string
-import curd, schemas
+from app.Util import CheckIP
+import app.curd, app.schemas
 from jose import JWTError, jwt
 from database import SessionLocal
 # from dotenv import load_dotenv
 import os
 import model
 from sqlalchemy.orm import Session
-uri_path= '/var/task/image/'
+uri_path= '/app/app/image/'
 '''
 database setup
 '''

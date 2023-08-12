@@ -8,7 +8,7 @@ services:
     expose:
       - 80
     environment:
-      - DATABASE_URL=postgresql://fastapi_traefik_prod:fastapi_traefik_prod@db:5432/fastapi_traefik_prod
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/iplogger
     depends_on:
       - db
     labels:
@@ -23,9 +23,9 @@ services:
     expose:
       - 5432
     environment:
-      - POSTGRES_USER=fastapi_traefik_prod
-      - POSTGRES_PASSWORD=fastapi_traefik_prod
-      - POSTGRES_DB=fastapi_traefik_prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=iplogger
   traefik:
     build:
       context: .
@@ -38,7 +38,7 @@ services:
       - "./traefik-public-certificates:/certificates"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`das.clmm24h.io`) && (PathPrefix(`/`)"
+      - "traefik.http.routers.dashboard.rule=Host(`das.clmm24h.io`) && (PathPrefix(`/`))"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
