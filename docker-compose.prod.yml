@@ -16,16 +16,34 @@ services:
       - "traefik.http.routers.fastapi.rule=Host(`clmm24h.io`)"
       - "traefik.http.routers.fastapi.tls=true"
       - "traefik.http.routers.fastapi.tls.certresolver=letsencrypt"
+
   db:
-    image: postgres:15-alpine
+    build: 
+      context: .
+      dockerfile: postgres.dockerfile
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data/
-    expose:
-      - 5432
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_USER=fastapi_traefik_prod
       - POSTGRES_PASSWORD=fastapi_traefik_prod
       - POSTGRES_DB=fastapi_traefik_prod
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - './data/pgadmin:/var/lib/pgadmin'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - postgres
+    restart: unless-stopped
+
   traefik:
     build:
       context: .
