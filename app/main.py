@@ -66,7 +66,7 @@ async def log_ip(request: Request, call_next):
     request.state.ip = ip
     request.state.timestamp = timestamp
     request.state.header = headers
-    request.header.port = port
+    request.state.port = port
     response = await call_next(request)
     return response
 
