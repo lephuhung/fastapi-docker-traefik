@@ -60,7 +60,7 @@ http middleware to get IP
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
     ip = request.headers['x-real-ip']
-    port= '80'
+    port= request.client.port
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     request.state.ip = ip
     request.state.timestamp = timestamp
