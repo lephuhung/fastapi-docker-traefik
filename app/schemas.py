@@ -29,12 +29,14 @@ class agents(BaseModel):
     zalo_name: str
     zalo_number_target: str
     webhook_id: int
-    # created_at: datetime
-    # ended_at: datetime
 
     class Config:
         from_attributes = True
-
+class agents_out(agents):
+    id: int
+    created_at: datetime
+    ended_at: datetime
+    token: str
 
 class webhooks(BaseModel):
     url_webhook: str
@@ -44,7 +46,9 @@ class webhooks(BaseModel):
 
     class Config:
         from_attributes = True
-
+class webhooks_out (webhooks):
+    created_at: datetime
+    ended_at: datetime
 
 class loggers(BaseModel):
     ip: str
@@ -81,3 +85,9 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Union[str, None] = None
+
+
+
+class image(BaseModel):
+    name: str
+    url: str

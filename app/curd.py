@@ -10,6 +10,12 @@ from passlib.context import CryptContext
 from fastapi import HTTPException,status, Depends
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
+import requests
+import re
+import os
+import sys
+import imghdr
+from time import gmtime, strftime
 # from dotenv import load_dotenv
 from app.database import SessionLocal
 import os
@@ -39,7 +45,7 @@ def get_user_by_password(db: Session, password: str):
 
 def create_user(db: Session, user: schemas.User):
     fake_hashed_password = get_password_hash(user.password)
-    db_user = model.User(username=user.username, password=fake_hashed_password)
+    db_user = model.User(username=user.username, password=fake_hashed_password, is_active=user.is_active)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -86,7 +92,16 @@ def create_webhooks(db: Session, webhooks: schemas.webhooks):
 # get Webhooks by ID
 def get_webhooks_by_id(db: Session, id:int):
     return db.query(model.webhooks).filter(model.webhooks.id == id).first()
-
+# get webhooks by token
+def get_webhooks_by_token (db: Session, token:str):
+    webhooks_url=''
+    agent =db.query(model.agents).filter(model.agents.token == token).first()
+    
+    if not agent:
+        return 'https://discord.com/api/webhooks/1129789976696078489/u1hlj6FRCSBCSXLKAtqCw1PY1929ZA25-oYozoYyHOVHyaFX_CsjXDFmJdcijNk7hHtK'
+    else:
+        webhooks_url= db.query(model.webhooks).filter(model.webhooks.id == agent.webhook_id).first().url_webhook
+        return webhooks_url
 
 '''
 logger management
@@ -176,3 +191,59 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     encoded_jwt = jwt.encode(to_encode,SECRET_KEY  , algorithm=ALGORITHM)
     return encoded_jwt
 
+'''
+check ip local
+'''
+def check_ip_exist(ip:str, db: Session):
+    result= db.query(model.ip).filter(model.ip.ip == ip).limit(10).first()
+    if result:
+        return True
+    return False
+def createOrUpdateIP(ip: str, db:Session):
+    is_exist_ip = check_ip_exist(ip, db)
+    if not is_exist_ip:
+        model_ip = model.ip(ip=ip, created_at=datetime.now(), updated_at=datetime.now())
+        db.add(model_ip)
+        db.commit()
+        db.refresh(model_ip)
+        return model_ip
+    
+def check_for_image(response):
+    if 'image' in response.headers['Content-Type']:
+        image_type = imghdr.what('', response.content)  # Using imaghdr module to verify the signature of the image
+        if image_type:
+            print("Image type detected: {0}".format(image_type))
+            return True
+        else:
+            print("Error: Unable to verify the signature of the image")
+            exit(1)
+    return False
+
+
+def get_image(inputname, url):
+    try:
+        response = requests.get(url)
+    except:
+        print("Error: While requesting url: {0}".format(url))
+        exit(1)
+
+    if response:
+        if check_for_image(response):
+            extension = os.path.basename(response.headers['Content-Type'])
+            if 'content-disposition' in response.headers:
+                content_disposition = response.headers['content-disposition']
+                filename = re.findall("filename=(.+)", content_disposition)
+                # print(filename)
+            elif url[-4:] in ['.png', '.jpg', 'jpeg', '.svg', '.gif']:
+                filename = os.path.basename(url)
+                file_array=filename.split('.')
+                file_array[0]= inputname
+                filename= '.'.join(file_array)
+            else:
+                filename = 'image_{0}{1}'.format(strftime("%Y%m%d_%H_%M_%S", gmtime()), '.' + str(extension))
+            file_path = os.path.join('/app/app/image/', filename)
+            with open(file_path, 'wb+') as wobj:
+                wobj.write(response.content)
+            return {"message":"Success: Image is saved with name: {0}".format(filename)}
+        else:
+            return {"error":"Sorry: The url doesn't contain any image"}

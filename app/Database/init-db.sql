@@ -49,3 +49,9 @@ CREATE TABLE Users(
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
+CREATE TABLE ip(
+    id SERIAL PRIMARY KEY,
+    ip text,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);

