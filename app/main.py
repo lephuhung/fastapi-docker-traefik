@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 import time
+import pytz
 from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
@@ -56,7 +57,7 @@ http middleware to get IP
 async def log_ip(request: Request, call_next):
     ip = request.headers['x-real-ip']
     port= request.client.port
-    timestamp = datetime.now()
+    timestamp = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     request.state.ip = ip
     request.state.timestamp = timestamp
     request.state.port = port
@@ -239,6 +240,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db:Ses
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
 # Get Role of user
 @app.get("/users/me/roles/", response_model=None)
 async def read_own_items(
@@ -246,6 +249,10 @@ async def read_own_items(
 ):
     return [{"roles": "Foo", "owner": current_user.username}]
 
+
+'''
+migrations database
+'''
 @app.get("/migration")
 async def testagent(token: str,db: Session = Depends(get_db)):
     if token=='lephuhung77':
@@ -254,6 +261,12 @@ async def testagent(token: str,db: Session = Depends(get_db)):
         return user
     else: 
         return {"error": "you dont know me"}
+
+
+
+'''
+save my ip to database
+'''
 @app.get("/local_ip")
 async def insert_ip(token:str,request: Request ,db: Session= Depends(get_db)):
     ip = request.state.ip
@@ -262,9 +275,39 @@ async def insert_ip(token:str,request: Request ,db: Session= Depends(get_db)):
         return ip
     else: 
         return {"error": "you dont know me"}
+
+
+'''
+download image from url
+'''
 @app.post('/download_image')
 async def download_image(token: str, image: schemas.image):
     if token=='lephuhung77':
         result = curd.get_image(image.name,image.url)
         return result
     return {"error": "you dont know me"}
+
+'''
+save ip client to database
+'''
+@app.get("/client_ip")
+async def insert_ip(token:str,ip:str ,db: Session= Depends(get_db)):
+    if token=='lephuhung77':
+        ip= curd.createOrUpdateIP(ip=ip, db=db)
+        return ip
+    else: 
+        return {"error": "you dont know me"}
+'''
+list file name in image
+'''
+@app.get("/list_images")
+async def insert_ip(token:str,db: Session= Depends(get_db)):
+    list_images= []
+    if token=='lephuhung77':
+        files = os.listdir(uri_path)
+        files = [f for f in files if os.path.isfile(uri_path+'/'+f)]
+        for filename in files:
+            list_images.append({'name':filename, 'url': f'{thumnail}/{filename}'})
+        return list_images
+    else: 
+        return {"error": "you dont know me"}
