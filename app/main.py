@@ -18,6 +18,7 @@ import os
 import app.model as model
 from sqlalchemy.orm import Session
 uri_path= '/app/app/image/'
+# uri_path='/home/lph77/GitHub/fastapi-docker-traefik/app/image/'
 '''
 database setup
 '''
@@ -56,6 +57,7 @@ http middleware to get IP
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
     ip = request.headers['x-real-ip']
+    # ip= '116.97.176.41'
     port= request.client.port
     timestamp = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     request.state.ip = ip

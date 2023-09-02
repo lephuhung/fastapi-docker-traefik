@@ -207,6 +207,7 @@ def createOrUpdateIP(ip: str, db:Session):
         db.commit()
         db.refresh(model_ip)
         return model_ip
+    return {'ip':ip, 'message':'ip exists'}
     
 def check_for_image(response):
     if 'image' in response.headers['Content-Type']:

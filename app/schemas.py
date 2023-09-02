@@ -47,6 +47,7 @@ class webhooks(BaseModel):
     class Config:
         from_attributes = True
 class webhooks_out (webhooks):
+    id: int
     created_at: datetime
     ended_at: datetime
 

