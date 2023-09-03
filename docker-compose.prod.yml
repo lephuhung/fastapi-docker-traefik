@@ -13,7 +13,7 @@ services:
       - db
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fastapi.rule=Host(`clmm24h.io`)"
+      - "traefik.http.routers.fastapi.rule=Host(`z-image-cdn.com`)"
       - "traefik.http.routers.fastapi.tls=true"
       - "traefik.http.routers.fastapi.middlewares=cors"
       - "traefik.http.routers.fastapi.tls.certresolver=letsencrypt"
@@ -46,7 +46,7 @@ services:
       - "./traefik-public-certificates:/certificates"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`das.clmm24h.io`) && (PathPrefix(`/`))"
+      - "traefik.http.routers.dashboard.rule=Host(`das.z-image-cdn.com`) && (PathPrefix(`/`))"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
