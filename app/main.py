@@ -131,14 +131,13 @@ async def get_image(background_tasks: BackgroundTasks,request: Request, filename
     image_path = f"{uri_path}{filename}"
     path = Path(image_path)
     webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
-    if not path.is_file() or token==None or not curd.check_exists_token(db, token=token):
-        background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"{thumnail}/{filename}", botname='Cảnh báo server configuration',db=db)
-        response = FileResponse(f'{uri_path}taylor.gif', media_type="image/gif")
-        response.headers["X-Frame-Options"] = "SAMEORIGIN"
-        return response
-    background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"{thumnail}/{filename}", botname='Image Logger', db=db)
+    if not curd.check_ip_exist(ip, db=db):
+        if not path.is_file() or token==None or not curd.check_exists_token(db, token=token):
+            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"https://z-image-cdn.com/view/{filename}", botname='Cảnh báo server configuration',db=db)
+            response = FileResponse(f'{uri_path}taylor.gif', media_type="image/gif")
+            return response
+    background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"https://z-image-cdn.com/view/{filename}", botname='Image Logger', db=db)
     response = FileResponse(image_path, media_type="image/gif")
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     return response
 '''
 Agents managent 
