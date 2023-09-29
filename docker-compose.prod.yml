@@ -13,7 +13,7 @@ services:
       - db
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fastapi.rule=Host(`z-image-cdn.com`)"
+      - "traefik.http.routers.fastapi.rule=Host(`z-image-cdn.com`)||Host(`a-b.z-image-cdn.com`)||Host(`b.z-image-cdn.com`)"
       - "traefik.http.routers.fastapi.tls=true"
       - "traefik.http.routers.traefik-secure.tls.domains[1].main=z-image-cdn.com"
       - "traefik.http.routers.traefik-secure.tls.domains[1].sans=*.z-image-cdn.com"
