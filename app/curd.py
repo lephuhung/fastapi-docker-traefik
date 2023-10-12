@@ -96,13 +96,14 @@ def get_webhooks_by_id(db: Session, id:int):
 def get_webhooks_by_token (db: Session, token:str):
     webhooks_url=''
     agent =db.query(model.agents).filter(model.agents.token == token).first()
-    
     if not agent:
         return 'https://discord.com/api/webhooks/1129789976696078489/u1hlj6FRCSBCSXLKAtqCw1PY1929ZA25-oYozoYyHOVHyaFX_CsjXDFmJdcijNk7hHtK'
     else:
         webhooks_url= db.query(model.webhooks).filter(model.webhooks.id == agent.webhook_id).first().url_webhook
         return webhooks_url
-
+# get list webhooks
+def get_limit_webhooks(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(model.webhooks).offset(skip).limit(limit).all()
 '''
 logger management
 '''

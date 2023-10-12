@@ -223,6 +223,10 @@ async def agents(agents: schemas.agents,token: Annotated[str, Depends(oauth2_sch
 '''
 Webhooks management
 '''
+@app.get("/webhooks")
+async def agents(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
+    webhooks= curd.get_limit_webhooks(db ,skip=0, limit=10)
+    return webhooks
 @app.post("/webhooks/add", response_model=schemas.webhooks_out)
 async def create_webhooks(webhooks:schemas.webhooks, token: Annotated[str, Depends(oauth2_scheme)],db:Session = Depends(get_db)):
     webhooks_model = curd.create_webhooks(db, webhooks=webhooks)
