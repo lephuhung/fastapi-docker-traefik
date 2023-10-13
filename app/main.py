@@ -242,6 +242,11 @@ async def get_webhooks_by_id(webhook_id:int,token: Annotated[str, Depends(oauth2
 '''
 get logger by token
 '''
+@app.get("/logger")
+async def loggers_list(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
+    logger= curd.get_logger_list(db ,skip=0, limit=10)
+    return logger
+
 @app.get("/logger/{id}")
 async def get_logger_by_id(id:int,token: str='' ,db:Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -254,7 +259,6 @@ async def get_logger_by_id(id:int,token: str='' ,db:Session = Depends(get_db)):
         return data
     else:
         raise credentials_exception
-    
 
 @app.get("/logger/token/{key}")
 async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10 ,db:Session = Depends(get_db)):
@@ -268,10 +272,13 @@ async def get_logger_error_by_id(id:int,token: Annotated[str, Depends(oauth2_sch
     logger = curd.get_logger_error_by_id(id=id, db=db)
     return logger
 
-
+@app.get("/logger_error")
+async def logger_error_list(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
+    logger= curd.get_logger_error_list(db ,skip=0, limit=10)
+    return logger
 
 @app.get("/logger_error/token/{key}")
-async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10, db:Session = Depends(get_db)):
+async def get_logger_error_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10, db:Session = Depends(get_db)):
     logger_by_token= curd.get_logger_error_by_token(token=key, limit=limit ,db=db)
     return logger_by_token
 '''
@@ -355,6 +362,10 @@ async def insert_ip(token:str,request: Request ,db: Session= Depends(get_db)):
     else: 
         return {"error": "you dont know me"}
 
+@app.get("/iplist")
+async def iplist(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
+    ip= curd.get_ip_list(db ,skip=0, limit=10)
+    return ip
 
 '''
 download image from url
@@ -381,12 +392,13 @@ list file name in image
 '''
 @app.get("/list_images")
 async def insert_ip(token:str,db: Session= Depends(get_db)):
+    thumbimage="https://z-image-cdn.com/view"
     list_images= []
     if token=='lephuhung77':
         files = os.listdir(uri_path)
         files = [f for f in files if os.path.isfile(uri_path+'/'+f)]
         for filename in files:
-            list_images.append({'name':filename, 'url': f'{thumnail}/{filename}'})
+            list_images.append({'name':filename, 'url': f'{thumbimage}/{filename}'})
         return list_images
     else: 
         return {"error": "you dont know me"}

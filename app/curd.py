@@ -124,6 +124,8 @@ def get_logger_by_id(db:Session, id: int):
         return db.query(model.logger).filter(model.logger.id == id).limit(10).all()
     except SQLAlchemyError as e:
         return {"message": "An error occurred while retrieving the logs", "error": str(e)}
+def get_logger_list(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(model.logger).offset(skip).limit(limit).all()
 '''
     Logger Error Management
 '''
@@ -145,7 +147,8 @@ def get_logger_error_by_id(db:Session, id: int):
         return db.query(model.logger_error).filter(model.logger_error.id == id).limit(10).all()
     except SQLAlchemyError as e:
         return {"message": "An error occurred while retrieving the logs", "error": str(e)}
-
+def get_logger_error_list(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(model.logger_error).offset(skip).limit(limit).all()
 '''
 Uitls
 '''
@@ -220,7 +223,8 @@ def check_for_image(response):
             print("Error: Unable to verify the signature of the image")
             exit(1)
     return False
-
+def get_ip_list(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(model.ip).offset(skip).limit(limit).all()
 
 def get_image(inputname, url):
     try:
