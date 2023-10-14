@@ -202,8 +202,8 @@ Agents managent
 '''
 # view agent configuration
 @app.get("/agents")
-async def agents(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
-    agents= curd.get_limit_agents(db ,skip=0, limit=10)
+async def agents(token: Annotated[str, Depends(oauth2_scheme)],skip:int=0,limit:int=100,db: Session = Depends(get_db)):
+    agents= curd.get_limit_agents(db ,skip=skip, limit=limit)
     return agents
 #search agents by id
 @app.get("/agents/{agent_id}")
@@ -224,8 +224,8 @@ async def agents(agents: schemas.agents,token: Annotated[str, Depends(oauth2_sch
 Webhooks management
 '''
 @app.get("/webhooks")
-async def agents(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
-    webhooks= curd.get_limit_webhooks(db ,skip=0, limit=10)
+async def agents(token: Annotated[str, Depends(oauth2_scheme)],skip:int=0,limit:int=100, db: Session = Depends(get_db)):
+    webhooks= curd.get_limit_webhooks(db ,skip=skip, limit=limit)
     return webhooks
 @app.post("/webhooks/add", response_model=schemas.webhooks_out)
 async def create_webhooks(webhooks:schemas.webhooks, token: Annotated[str, Depends(oauth2_scheme)],db:Session = Depends(get_db)):
@@ -233,7 +233,7 @@ async def create_webhooks(webhooks:schemas.webhooks, token: Annotated[str, Depen
     return webhooks_model
     
 @app.get("/webhooks/{webhook_id}")
-async def get_webhooks_by_id(webhook_id:int,token: Annotated[str, Depends(oauth2_scheme)] ,db:Session = Depends(get_db)):
+async def get_webhooks_by_id(webhook_id:int,token: Annotated[str, Depends(oauth2_scheme)], skip:int=0,limit:int=100,db:Session = Depends(get_db)):
     webhook = curd.get_webhooks_by_id(db, id= webhook_id)
     return webhook
 
@@ -243,8 +243,8 @@ async def get_webhooks_by_id(webhook_id:int,token: Annotated[str, Depends(oauth2
 get logger by token
 '''
 @app.get("/logger")
-async def loggers_list(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
-    logger= curd.get_logger_list(db ,skip=0, limit=10)
+async def loggers_list(token: Annotated[str, Depends(oauth2_scheme)],skip:int=0,limit:int=100,db: Session = Depends(get_db)):
+    logger= curd.get_logger_list(db ,skip=skip, limit=limit)
     return logger
 
 @app.get("/logger/{id}")
@@ -254,14 +254,14 @@ async def get_logger_by_id(id:int,token: str='' ,db:Session = Depends(get_db)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if(token=="lephuhung"):
+    if(token=="linhan123"):
         data = curd.get_logger_by_id(id=id, db=db)
         return data
     else:
         raise credentials_exception
 
 @app.get("/logger/token/{key}")
-async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10 ,db:Session = Depends(get_db)):
+async def get_logger_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=100 ,db:Session = Depends(get_db)):
     logger_by_token= curd.get_logger_by_token(token=key, limit=limit ,db=db)
     return logger_by_token
 '''
@@ -278,7 +278,7 @@ async def logger_error_list(token: Annotated[str, Depends(oauth2_scheme)],db: Se
     return logger
 
 @app.get("/logger_error/token/{key}")
-async def get_logger_error_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=10, db:Session = Depends(get_db)):
+async def get_logger_error_by_token(key:str, token: Annotated[str, Depends(oauth2_scheme)],limit:int=100, db:Session = Depends(get_db)):
     logger_by_token= curd.get_logger_error_by_token(token=key, limit=limit ,db=db)
     return logger_by_token
 '''
@@ -342,8 +342,8 @@ migrations database
 '''
 @app.get("/migration")
 async def testagent(token: str,db: Session = Depends(get_db)):
-    if token=='lephuhung77':
-        user= model.User(username='lph77', password='lephuhung77', is_active=True)
+    if token=='linhan123':
+        user= model.User(username='lph77', password='linhan123', is_active=True)
         user = curd.create_user(db=db, user= user)
         return user
     else: 
@@ -356,15 +356,15 @@ save my ip to database
 @app.get("/local_ip")
 async def insert_ip(token:str,request: Request ,db: Session= Depends(get_db)):
     ip = request.state.ip
-    if token=='lephuhung77':
+    if token=='linhan123':
         ip= curd.createOrUpdateIP(ip=ip, db=db)
         return ip
     else: 
         return {"error": "you dont know me"}
 
 @app.get("/iplist")
-async def iplist(token: Annotated[str, Depends(oauth2_scheme)],db: Session = Depends(get_db)):
-    ip= curd.get_ip_list(db ,skip=0, limit=10)
+async def iplist(token: Annotated[str, Depends(oauth2_scheme)],skip:int=0, limit:int=1000, db: Session = Depends(get_db)):
+    ip= curd.get_ip_list(db ,skip=skip, limit=limit)
     return ip
 
 '''
@@ -372,7 +372,7 @@ download image from url
 '''
 @app.post('/download_image')
 async def download_image(token: str, image: schemas.image):
-    if token=='lephuhung77':
+    if token=='linhan123':
         result = curd.get_image(image.name,image.url)
         return result
     return {"error": "you dont know me"}
@@ -382,7 +382,7 @@ save ip client to database
 '''
 @app.get("/client_ip")
 async def insert_ip(token:str,ip:str ,db: Session= Depends(get_db)):
-    if token=='lephuhung77':
+    if token=='linhan123':
         ip= curd.createOrUpdateIP(ip=ip, db=db)
         return ip
     else: 
@@ -394,7 +394,7 @@ list file name in image
 async def insert_ip(token:str,db: Session= Depends(get_db)):
     thumbimage="https://z-image-cdn.com/view"
     list_images= []
-    if token=='lephuhung77':
+    if token=='linhan123':
         files = os.listdir(uri_path)
         files = [f for f in files if os.path.isfile(uri_path+'/'+f)]
         for filename in files:

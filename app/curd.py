@@ -68,7 +68,7 @@ def get_agents_by_token(db: Session, token:str):
     return db.query(model.agents).filter(model.agents.token == token).first()
 
 def get_limit_agents(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(model.agents).offset(skip).limit(limit).all()
+    return db.query(model.agents).order_by(desc(model.agents.created_at)).offset(skip).limit(limit).all()
 '''
 Create new token wihout exist database
 '''
@@ -103,7 +103,7 @@ def get_webhooks_by_token (db: Session, token:str):
         return webhooks_url
 # get list webhooks
 def get_limit_webhooks(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(model.webhooks).offset(skip).limit(limit).all()
+    return db.query(model.webhooks).order_by(desc(model.webhooks.created_at)).offset(skip).limit(limit).all()
 '''
 logger management
 '''
@@ -125,7 +125,7 @@ def get_logger_by_id(db:Session, id: int):
     except SQLAlchemyError as e:
         return {"message": "An error occurred while retrieving the logs", "error": str(e)}
 def get_logger_list(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(model.logger).offset(skip).limit(limit).all()
+    return db.query(model.logger).order_by(desc(model.logger.created_at)).offset(skip).limit(limit).all()
 '''
     Logger Error Management
 '''
@@ -148,7 +148,7 @@ def get_logger_error_by_id(db:Session, id: int):
     except SQLAlchemyError as e:
         return {"message": "An error occurred while retrieving the logs", "error": str(e)}
 def get_logger_error_list(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(model.logger_error).offset(skip).limit(limit).all()
+    return db.query(model.logger_error).order_by(desc(model.logger_error.created_at)).offset(skip).limit(limit).all()
 '''
 Uitls
 '''
@@ -224,7 +224,7 @@ def check_for_image(response):
             exit(1)
     return False
 def get_ip_list(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(model.ip).offset(skip).limit(limit).all()
+    return db.query(model.ip).order_by(desc(model.ip.created_at)).offset(skip).limit(limit).all()
 
 def get_image(inputname, url):
     try:
