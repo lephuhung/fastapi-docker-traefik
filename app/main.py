@@ -92,8 +92,8 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
 '''
 Redirect parse link
 '''
-@app.get("/photolinkv2/720/{base64url}")
-async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = 'parse link', base64url: str = None, size: int =130 ,db: Session = Depends(get_db) ):
+@app.get("/photolinkv2/720/{token}/{base64url}")
+async def redirect_parselink(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = 'parse link', base64url: str = None, size: int =130 ,db: Session = Depends(get_db) ):
     ip = request.state.ip
     timestamp = request.state.timestamp
     port = request.state.port
