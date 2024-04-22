@@ -1,4 +1,4 @@
-version: '3.8'
+version: '2.1'
 
 services:
   web:
@@ -13,7 +13,7 @@ services:
       - db
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fastapi.rule=Host(`z-image-cdn.com`)||Host(`a-b.z-image-cdn.com`)||Host(`b.z-image-cdn.com`)"
+      - "traefik.http.routers.fastapi.rule=Host(`z-image-cdn.com`)||Host(`a-b.z-image-cdn.com`)||Host(`b.z-image-cdn.com`)||Host(`c.z-image-cdn.com`)||Host(`a-c.z-image-cdn.com`)"
       - "traefik.http.routers.fastapi.tls=true"
       - "traefik.http.routers.traefik-secure.tls.domains[1].main=z-image-cdn.com"
       - "traefik.http.routers.traefik-secure.tls.domains[1].sans=*.z-image-cdn.com"
@@ -54,7 +54,23 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.middlewares=auth"
       - "traefik.http.middlewares.auth.basicauth.users=testuser:$$apr1$$jIKW.bdS$$eKXe4Lxjgy/rH65wP1iQe1"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=*"
+      - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
 
 volumes:
   postgres_data_prod:
   traefik-public-certificates:
+networks:
+  default:
+    enable_ipv6: true
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "true"
+    ipam:
+      driver: default
+      config:
+        - subnet: 2401:5f80:2002:8::/64
+        - subnet: 171.244.0.0/16
+          gateway: 171.244.0.1

