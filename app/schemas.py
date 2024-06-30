@@ -87,3 +87,29 @@ class TokenData(BaseModel):
 class image(BaseModel):
     name: str
     url: str
+
+class token (BaseModel):
+    token_type: str
+    token: str
+
+class phone (BaseModel):
+    phone: str
+    phone_user: str
+
+class zns(BaseModel):
+    zns_id: str
+    zns_name: str
+    zns_value: str
+    discord_url: str
+
+class zns_message(BaseModel):
+    phone_id: int
+    message_id: str
+    zns_id: str
+    message: str
+    time_stamp: str
+    time_send: str
+
+class UpdateZnsMessageRequest(BaseModel):
+    message: str
+    time_stamp: str

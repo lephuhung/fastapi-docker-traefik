@@ -5,10 +5,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 import time
 import pytz
+import requests
 from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from typing import Annotated
 from app.Util import CheckIP, checkinfo
+from app.curd import update_token, get_refresh_token
 # from app.image.download_image import get_image
 import app.curd as curd, app.schemas as schemas
 from jose import JWTError, jwt
@@ -18,21 +20,78 @@ import base64
 import ipaddress
 # from dotenv import load_dotenv
 import os
+
 import app.model as model
 from sqlalchemy.orm import Session
+from apscheduler.schedulers.background import BackgroundScheduler
 uri_path= '/app/app/image/'
 # uri_path="/home/lph77/GitHub/fastapi-docker-traefik/app/image/"
 '''
 database setup
 '''
 
-# load_dotenv()
+'''
+cronjob 1m
+'''
+
+
+
+app = FastAPI()
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+def get_refresh_token_daily():
+    db_user: Session = SessionLocal()
+    refresh_token = get_refresh_token(db=db_user)
+    """
+    Refresh access token from Zalo OAuth
+
+    :return: None
+    """
+    if refresh_token:
+        url = (
+            "https://oauth.zaloapp.com/v4/oa/access_token"
+        )
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "secret_key": "ixx68ajX6STniOKMT4YL",
+        }
+
+        data = {
+            "refresh_token": f"{refresh_token}",
+            "app_id": "4344827319825630995",
+            "grant_type": "refresh_token"
+        }
+        response = requests.post(url, headers=headers, data=data)
+        print(response.json())
+        access_token = response.json().get("access_token")
+        refresh_token = response.json().get("refresh_token")
+        if refresh_token and access_token:
+            update_token(token_type='refresh_token', token_string = refresh_token ,db=db_user)
+            update_token(token_type='access_token', token_string = access_token,db=db_user)
+
+scheduler = BackgroundScheduler()
+
+# Check if the job is already scheduled
+job = scheduler.get_job('get_refresh_token_daily')
+if not job:
+    scheduler.add_job(get_refresh_token_daily, 'interval', minutes=60, id='get_refresh_token_daily', replace_existing=True)
+
+scheduler.start()
+
+# Ensure only one instance of the scheduler is running
+if not scheduler.running:
+    scheduler.start()
+
+'''
+end cronjob
+'''
+# load_dotenv()
+
 app = FastAPI(docs_url=None)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", scheme_name="JWT")
 '''
@@ -71,11 +130,12 @@ async def log_ip(request: Request, call_next):
     request.state.ip = ip
     request.state.timestamp = timestamp
     request.state.port = port
-    
+    print(request.headers)
     request.state.zcid = request.headers.get('zcid', None)
     request.state.operator = request.headers.get('operator', None)
     request.state.networktype = request.headers.get('networktype', None)
     request.state.t_md = request.headers.get('t-md', None)
+    request.state.viewerkey = request.headers.get('viewerkey', None)
     response = await call_next(request)
     return response
 
@@ -98,7 +158,8 @@ async def redirect_image_v4(background_tasks: BackgroundTasks,request: Request, 
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    viewerkey = request.state.viewerkey
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent, viewerkey)
     try:
         ipv4 = ipaddress.IPv4Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -120,8 +181,9 @@ async def redirect_image(background_tasks: BackgroundTasks,request: Request, url
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
-
+    viewerkey = request.state.viewerkey
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent, viewerkey)
+    print(f'url: {request.url}')
     try:
         ipv6 = ipaddress.IPv6Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -152,7 +214,9 @@ async def redirect_parlink(background_tasks: BackgroundTasks,request: Request,to
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    viewerkey = request.state.viewerkey
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent, viewerkey)
+    print(f'url: {request.url}')
     try: 
         ipv6 = ipaddress.IPv6Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -189,7 +253,8 @@ async def redirect_parlink(background_tasks: BackgroundTasks,request: Request,to
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    viewerkey = request.state.viewerkey
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent, viewerkey)
     try:
         ipv4 = ipaddress.IPv4Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -216,7 +281,8 @@ async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,t
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    viewerkey = request.state.viewerkey
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent, viewerkey)
     try: 
         ipv4 = ipaddress.IPv4Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -241,7 +307,9 @@ async def redirect_emoticon(background_tasks: BackgroundTasks,request: Request,t
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    viewerkey = request.state.viewerkey
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent, viewerkey)
+    print(f'url: {request.url}')
     try:
         ipv6 = ipaddress.IPv6Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -354,7 +422,7 @@ async def get_image(background_tasks: BackgroundTasks,request: Request, filename
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent)
     try:
         ipv6 = ipaddress.IPv6Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -387,7 +455,7 @@ async def get_image(background_tasks: BackgroundTasks,request: Request, filename
     zcid = request.state.zcid
     operator = request.state.operator
     t_md = request.state.t_md
-    result_header = checkinfo(t_md, zcid, networktype, operator)
+    result_header = checkinfo(t_md, zcid, networktype, operator, user_agent)
     try:
         ipv4 = ipaddress.IPv4Address(ip)
         webhooks_url= curd.get_webhooks_by_token(db=db,token=token)
@@ -608,3 +676,76 @@ async def insert_ip(token:str,db: Session= Depends(get_db)):
         return list_images
     else: 
         return {"error": "you dont know me"}
+
+
+'''
+Phone
+'''
+@app.get("/list-phone")
+async def get_list_phone(token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    result = curd.list_phone(db=db)
+    return result
+
+@app.post("/phone/add")
+async def phone_add(phone: schemas.phone, token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    phone_model = curd.create_phone(db= db, phone= phone)
+    return phone_model
+
+@app.post("/phone/search")
+async def phone_search (phoneNumber: str, token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    phone_result = curd.find_phone(db= db, phoneNumber= phoneNumber)
+    return phone_result
+
+'''
+zns-message
+'''
+
+@app.get("/list-zns-message")
+async def get_zns_message (token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    result = curd.list_zns_message(db=db)
+    return result
+
+@app.post("/list-zns-by-phone-id/{phone_id}")
+async def list_zns_by_phone_id(phone_id: int, token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    result = curd.list_zns_by_phone_id(db= db, phone_id= phone_id)
+    return result
+
+@app.post("/find-zns-message-id/{message_id}")
+async def find_zns_by_message_id(message_id: str, token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    result = curd.find_zns_by_message_id(db= db, message_id = message_id)
+    return result
+
+@app.post("/zns-message/add")
+async def zns_message_add(zns_message: schemas.zns_message,token = Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    zns_message_result = curd.create_zns_message(db= db, zns_message= zns_message)
+    return zns_message_result
+
+@app.post("/zns-message/update/{id}")
+async def zns_message_update(id: int, updateRequest: schemas.UpdateZnsMessageRequest, token = Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    result = curd.update_zns_message(db= db, id=id, message= updateRequest.message, time_stamp= updateRequest.time_stamp)
+    return result
+
+'''
+zns
+'''
+@app.get("/list-zns")
+async def get_zns (token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    result = curd.list_zns(db= db)
+    return result
+
+@app.post("/zns/add")
+async def zns_add(zns: schemas.zns,token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    zns_model= curd.create_zns(db= db, zns=zns)
+    return zns_model #add Content-Type:application/json
+
+@app.post("/zns/search_by_phone")
+async def search_by_phone(phone_id:int, token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    zns_by_phone = curd.find_zns_by_phone_id(db= db, phone_id = phone_id)
+    return zns_by_phone
+
+@app.get("/token-zl")
+async def get_token_zl (token: Annotated[str, Depends(oauth2_scheme)] ,db: Session = Depends(get_db)):
+    access_token = curd.get_access_token(db=db)
+    return access_token
+
+

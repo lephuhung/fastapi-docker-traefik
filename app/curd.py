@@ -17,6 +17,7 @@ import sys
 import imghdr
 import ipaddress
 from time import gmtime, strftime
+from fastapi.responses import JSONResponse
 # from dotenv import load_dotenv
 from app.database import SessionLocal
 import os
@@ -166,6 +167,196 @@ def generate_random_string(length):
     # Generate a random string of the specified length
     random_string = ''.join(random.choice(characters) for _ in range(length))
     return random_string
+'''
+Token
+'''
+def update_token(db: Session, token_string: str, token_type: str):
+    token = db.query(model.token).filter(model.token.token_type==token_type).first()
+    token.token = token_string
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+
+def get_refresh_token( db: Session):
+    token_result = db.query(model.token).filter(model.token.token_type == 'refresh_token').first()
+    if token_result:
+        return token_result.token # or any other attribute you need to return
+    else:
+        return None
+
+def get_access_token( db: Session):
+    token_result = db.query(model.token).filter(model.token.token_type == 'access_token').first()
+    if token_result:
+        return token_result.token # or any other attribute you need to return
+    else:
+        return None
+'''
+Phone
+'''
+def create_phone (db: Session, phone:schemas.phone):
+    phone = model.phone(phone= phone.phone, phone_user=phone.phone_user,created_at=datetime.now(), updated_at= datetime.now())
+    db.add(phone)
+    db.commit()
+    db.refresh(phone)
+    return phone
+def list_phone(db:Session):
+    phone_result = db.query(model.phone).order_by(desc(model.phone.created_at)).limit(20).all()
+    return phone_result
+def find_phone(db: Session, phoneNumber:str):
+    phone_result = db.query(model.phone).filter(model.phone.phone == phoneNumber).first()
+    return phone_result
+'''
+End Phone
+'''
+'''
+ZNS
+'''
+def create_zns(db: Session, zns: schemas.zns):
+    zns = model.zns(zns_id= zns.zns_id, zns_value= zns.zns_value, zns_name = zns.zns_name, created_at=datetime.now(), updated_at= datetime.now())
+    db.add(zns)
+    db.commit()
+    db.refresh(zns)
+    return zns
+def list_zns(db: Session):
+    zns_result= db.query(model.zns).order_by(desc(model.zns.updated_at)).all()
+    return zns_result
+
+'''
+zns_message
+'''
+def create_zns_message(db: Session, zns_message: schemas.zns_message):
+    zns = model.zns_message(phone_id= zns_message.phone_id, message_id = zns_message.message_id, zns_id = zns_message.zns_id, message= zns_message.message, time_stamp = zns_message.time_stamp, time_send= zns_message.time_send,created_at=datetime.now(), updated_at= datetime.now())
+    db.add(zns)
+    db.commit()
+    db.refresh(zns)
+    return zns
+def update_zns_message(db: Session, message: str, id: int, time_stamp: str):
+    try:
+        zns_result = db.query(model.zns_message).filter(model.zns_message.id == id).first()
+        if zns_result:
+            zns_result.message = message
+            zns_result.time_stamp = time_stamp
+            db.commit()
+            db.refresh(zns_result)
+            return {"message": "Update Successful"}
+        else:
+            return {"message": "Record not found"}
+    except SQLAlchemyError as e:
+        db.rollback()
+        return {"message": f"Update Failed: {str(e)}"}
+
+def list_zns_by_phone_id (db: Session, phone_id: int):
+    data = (
+        db.query(
+            model.zns_message.id.label("id"),
+            model.zns_message.message_id.label("message_id"),
+            model.zns_message.message.label("message"),
+            model.zns_message.time_send.label("time_send"),
+            model.zns_message.zns_id.label("zns_id"),
+            model.zns_message.time_stamp.label("time_stamp"),
+            model.zns_message.created_at.label("created_at"),
+            model.zns_message.updated_at.label("updated_at"),
+            model.phone.phone.label("phone"),
+        )
+        .join(model.phone, model.phone.id == model.zns_message.phone_id)
+        .filter(model.zns_message.phone_id == phone_id)
+        .all()
+    )
+    if data:
+        formatted_result = [
+            {
+                "id": row.id,
+                "message_id": row.message_id,
+                "message": row.message,
+                "time_send": row.time_send,
+                "zns_id": row.zns_id,
+                "time_stamp": row.time_stamp,
+                "phone": row.phone,
+                "created_at": str(row.created_at),
+                "updated_at": str(row.updated_at),
+            }
+            for row in data
+        ]
+        formatted_result_as_dict = [dict(item) for item in formatted_result]
+        return JSONResponse(content=formatted_result_as_dict)
+    else: 
+        formatted_result=[]
+        return JSONResponse(content=formatted_result)
+    
+
+def find_zns_by_message_id(db: Session, message_id: str):
+    data = (
+        db.query(
+            model.zns_message.id.label("id"),
+            model.zns_message.message_id.label("message_id"),
+            model.zns_message.message.label("message"),
+            model.zns_message.time_send.label("time_send"),
+            model.zns_message.zns_id.label("zns_id"),
+            model.zns_message.time_stamp.label("time_stamp"),
+            model.zns_message.created_at.label("created_at"),
+            model.zns_message.updated_at.label("updated_at"),
+            model.phone.phone.label("phone"),
+        )
+        .join(model.phone, model.phone.id == model.zns_message.phone_id)
+        .filter(model.zns_message.message_id == message_id)
+        .all()
+    )
+    formatted_result = [
+        {
+            "id": row.id,
+            "message_id": row.message_id,
+            "message": row.message,
+            "time_send": row.time_send,
+            "zns_id": row.zns_id,
+            "time_stamp": row.time_stamp,
+            "phone": row.phone,
+            "created_at": str(row.created_at),
+            "updated_at": str(row.updated_at),
+        }
+        for row in data
+    ]
+    formatted_result_as_dict = [dict(item) for item in formatted_result]
+    return JSONResponse(content=formatted_result_as_dict)
+
+
+def list_zns_message(db: Session):
+    data = (
+            db.query(
+                model.zns_message.id.label("id"),
+                model.zns_message.message_id.label("message_id"),
+                model.zns_message.message.label("message"),
+                model.zns_message.time_send.label("time_send"),
+                model.zns_message.zns_id.label("zns_id"),
+                model.zns_message.time_stamp.label("time_stamp"),
+                model.zns_message.created_at.label("created_at"),
+                model.zns_message.updated_at.label("updated_at"),
+                model.phone.phone.label("phone"),
+            )
+            .join(model.phone, model.phone.id == model.zns_message.phone_id)
+            .order_by(desc(model.zns_message.updated_at))
+            .limit(40)
+            .all()
+        )
+    if data:
+        formatted_result = [
+            {
+                "id": row.id,
+                "message_id": row.message_id,
+                "message": row.message,
+                "time_send": row.time_send,
+                "zns_id": row.zns_id,
+                "time_stamp": row.time_stamp,
+                "phone": row.phone,
+                "created_at": str(row.created_at),
+                "updated_at": str(row.updated_at),
+            }
+            for row in data
+        ]
+        formatted_result_as_dict = [dict(item) for item in formatted_result]
+        return JSONResponse(content=formatted_result_as_dict)
+    else: 
+        formatted_result=[]
+        return JSONResponse(content=formatted_result)
 '''
 User credentials management
 '''
