@@ -173,6 +173,7 @@ Token
 def update_token(db: Session, token_string: str, token_type: str):
     token = db.query(model.token).filter(model.token.token_type==token_type).first()
     token.token = token_string
+    token.updated_at = datetime.now()
     db.add(token)
     db.commit()
     db.refresh(token)
@@ -200,7 +201,7 @@ def create_phone (db: Session, phone:schemas.phone):
     db.refresh(phone)
     return phone
 def list_phone(db:Session):
-    phone_result = db.query(model.phone).order_by(desc(model.phone.created_at)).limit(20).all()
+    phone_result = db.query(model.phone).order_by(desc(model.phone.created_at)).limit(10).all()
     return phone_result
 def find_phone(db: Session, phoneNumber:str):
     phone_result = db.query(model.phone).filter(model.phone.phone == phoneNumber).first()
@@ -212,7 +213,7 @@ End Phone
 ZNS
 '''
 def create_zns(db: Session, zns: schemas.zns):
-    zns = model.zns(zns_id= zns.zns_id, zns_value= zns.zns_value, zns_name = zns.zns_name, created_at=datetime.now(), updated_at= datetime.now())
+    zns = model.zns(zns_id= zns.zns_id, zns_value= zns.zns_value, zns_name = zns.zns_name, created_at=datetime.now(), updated_at= datetime.now(), discord_url = zns.discord_url)
     db.add(zns)
     db.commit()
     db.refresh(zns)
@@ -477,3 +478,30 @@ def get_image(inputname, url):
             return {"message":"Success: Image is saved with name: {0}".format(filename)}
         else:
             return {"error":"Sorry: The url doesn't contain any image"}
+
+
+'''
+og data
+'''
+def get_ogByToken(token: str, db:Session):
+    result = db.query(model.og_data).filter(model.og_data.token == token).first()
+    return result
+
+'''
+uap Token
+'''
+def createUap(token: str, phone: str, data: model.uap_data, ip: str, db: Session):
+    browser_name=data.browser.get('name'),
+    browser_version=data.browser.get('version'),
+    os_name=data.os.get('name'),
+    os_version=data.os.get('version'),
+    device_model=data.device.get('model'),
+    device_type=data.device.get('type'),
+    device_vendor=data.device.get('vendor'),
+    uap = model.uap_data( token=token, phone = phone, browser_name = browser_name, browser_version= browser_version, os_name = os_name, os_version = os_version, device_model = device_model,
+        device_type = device_type, device_vendor = device_vendor, user_agent = data.ua, ip = ip, timestamp = datetime.now()
+        )
+    db.add(uap)
+    db.commit()
+    db.refresh(uap)
+    return uap

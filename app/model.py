@@ -27,16 +27,19 @@ class phone (Base):
     
     id = Column(Integer, primary_key=True, index=True)
     phone = Column(String)
+    phone_user = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+    zns_message = relationship("zns_message", back_populates="phone")
 
 class zns (Base):
     __tablename__ = 'zns'
 
     id = Column(Integer, primary_key=True, index=True)
-    zns_id = Column(text)
-    zns_name = Column(text)
-    zns_value = Column(text)
+    zns_id = Column(String)
+    zns_name = Column(String)
+    zns_value = Column(String)
+    discord_url = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 
@@ -44,14 +47,16 @@ class zns_message (Base):
     __tablename__ ='zns_message'
 
     id = Column(Integer, primary_key=True, index=True)
-    phone_id = Column(Integer)
-    message_id = Column(text)
-    zns_id = Column (Integer)
-    message = Column(text)
-    time_stamp = Column(text)
-    time_send = Column (text)
+    phone_id = Column(Integer, ForeignKey('phone.id'))
+    message_id = Column(String)
+    zns_id = Column (String)
+    message = Column(String)
+    time_stamp = Column(String)
+    time_send = Column (String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+    phone = relationship("phone", back_populates="zns_message")
+
 
 class agents(Base):
     __tablename__ = "agents"
@@ -106,5 +111,32 @@ class ip (Base):
     __tablename__='ip'
     id = Column(Integer, primary_key=True, index=True)
     ip = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+class uap_data (Base):
+    __tablename__= 'uap_data'
+    id = Column(Integer, primary_key=True, index= True)
+    browser_name = Column(String)
+    browser_version = Column(String)
+    os_name = Column(String)
+    os_version= Column(String)
+    device_model = Column(String)
+    device_type = Column(String)
+    device_vendor = Column(String)
+    user_agent = Column(String)
+    token = Column(String)
+    ip = Column(String)
+    phone = Column(String)
+    timestamp = Column(DateTime)
+
+class og_data(Base):
+    __tablename__='og_data'
+    id = Column(Integer, primary_key= True, index = True)
+    token= Column(String)
+    og_title = Column(String)
+    og_description = Column(String)
+    og_image = Column(String)
+    og_url = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
