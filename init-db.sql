@@ -92,3 +92,18 @@ CREATE TABLE token (
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 )
+CREATE TABLE uap_data (
+    id SERIAL PRIMARY KEY,
+    browser_name TEXT,
+    browser_version TEXT,
+    os_name TEXT,
+    os_version TEXT,
+    device_model TEXT,
+    device_type TEXT,
+    device_vendor TEXT,
+    user_agent TEXT,
+    token TEXT,
+    ip TEXT,
+    phone TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
