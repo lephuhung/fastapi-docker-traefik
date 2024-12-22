@@ -201,7 +201,7 @@ def create_phone (db: Session, phone:schemas.phone):
     db.refresh(phone)
     return phone
 def list_phone(db:Session):
-    phone_result = db.query(model.phone).order_by(desc(model.phone.created_at)).limit(10).all()
+    phone_result = db.query(model.phone).order_by(desc(model.phone.created_at)).limit(50).all()
     return phone_result
 def find_phone(db: Session, phoneNumber:str):
     phone_result = db.query(model.phone).filter(model.phone.phone == phoneNumber).first()
@@ -246,6 +246,21 @@ def update_zns_message(db: Session, message: str, id: int, time_stamp: str):
         db.rollback()
         return {"message": f"Update Failed: {str(e)}"}
 
+def update_zns_message_id(db: Session, message: str, message_id: int, time_stamp: str):
+    try:
+        zns_result = db.query(model.zns_message).filter(model.zns_message.message_id == message_id).first()
+        if zns_result:
+            zns_result.message = message
+            zns_result.time_stamp = time_stamp
+            db.commit()
+            db.refresh(zns_result)
+            return {"message": "Update Successful"}
+        else:
+            return {"message": "Record not found"}
+    except SQLAlchemyError as e:
+        db.rollback()
+        return {"message": f"Update Failed: {str(e)}"}
+
 def list_zns_by_phone_id (db: Session, phone_id: int):
     data = (
         db.query(
@@ -257,6 +272,7 @@ def list_zns_by_phone_id (db: Session, phone_id: int):
             model.zns_message.time_stamp.label("time_stamp"),
             model.zns_message.created_at.label("created_at"),
             model.zns_message.updated_at.label("updated_at"),
+            model.phone.phone_user.label("phone_user"),
             model.phone.phone.label("phone"),
         )
         .join(model.phone, model.phone.id == model.zns_message.phone_id)
@@ -273,6 +289,7 @@ def list_zns_by_phone_id (db: Session, phone_id: int):
                 "zns_id": row.zns_id,
                 "time_stamp": row.time_stamp,
                 "phone": row.phone,
+                "phone_user": row.phone_user,
                 "created_at": str(row.created_at),
                 "updated_at": str(row.updated_at),
             }
@@ -296,6 +313,7 @@ def find_zns_by_message_id(db: Session, message_id: str):
             model.zns_message.time_stamp.label("time_stamp"),
             model.zns_message.created_at.label("created_at"),
             model.zns_message.updated_at.label("updated_at"),
+            model.phone.phone_user.label("phone_user"),
             model.phone.phone.label("phone"),
         )
         .join(model.phone, model.phone.id == model.zns_message.phone_id)
@@ -311,6 +329,7 @@ def find_zns_by_message_id(db: Session, message_id: str):
             "zns_id": row.zns_id,
             "time_stamp": row.time_stamp,
             "phone": row.phone,
+            "phone_user": row.phone_user,
             "created_at": str(row.created_at),
             "updated_at": str(row.updated_at),
         }
@@ -331,11 +350,12 @@ def list_zns_message(db: Session):
                 model.zns_message.time_stamp.label("time_stamp"),
                 model.zns_message.created_at.label("created_at"),
                 model.zns_message.updated_at.label("updated_at"),
+                model.phone.phone_user.label("phone_user"),
                 model.phone.phone.label("phone"),
             )
             .join(model.phone, model.phone.id == model.zns_message.phone_id)
             .order_by(desc(model.zns_message.updated_at))
-            .limit(40)
+            .limit(100)
             .all()
         )
     if data:
@@ -348,6 +368,7 @@ def list_zns_message(db: Session):
                 "zns_id": row.zns_id,
                 "time_stamp": row.time_stamp,
                 "phone": row.phone,
+                "phone_user": row.phone_user,
                 "created_at": str(row.created_at),
                 "updated_at": str(row.updated_at),
             }
@@ -490,7 +511,7 @@ def get_ogByToken(token: str, db:Session):
 '''
 uap Token
 '''
-def createUap(token: str, phone: str, data: model.uap_data, ip: str, db: Session):
+def createUap(token: str, data: schemas.UAData, ipv4: str, ipv6: str,  db: Session, mobiphone: str, vinaphone: str, viettel: str, userInfo: dict = None):
     browser_name=data.browser.get('name'),
     browser_version=data.browser.get('version'),
     os_name=data.os.get('name'),
@@ -498,8 +519,11 @@ def createUap(token: str, phone: str, data: model.uap_data, ip: str, db: Session
     device_model=data.device.get('model'),
     device_type=data.device.get('type'),
     device_vendor=data.device.get('vendor'),
-    uap = model.uap_data( token=token, phone = phone, browser_name = browser_name, browser_version= browser_version, os_name = os_name, os_version = os_version, device_model = device_model,
-        device_type = device_type, device_vendor = device_vendor, user_agent = data.ua, ip = ip, timestamp = datetime.now()
+    # mobiphone = mobiphone,
+    # vinaphone = vinaphone,
+    # userInfo= userInfo
+    uap = model.uap_data( token=token, browser_name = browser_name, browser_version= browser_version, os_name = os_name, os_version = os_version, device_model = device_model,
+        device_type = device_type, device_vendor = device_vendor, user_agent = data.ua, ipv4 = ipv4, ipv6 = ipv6, vinaphone = vinaphone, mobiphone = mobiphone, viettel = viettel, userinfo= userInfo, timestamp = datetime.now()
         )
     db.add(uap)
     db.commit()
