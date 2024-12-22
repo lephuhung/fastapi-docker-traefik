@@ -17,12 +17,14 @@ services:
       - "traefik.http.routers.fastapi.tls=true"
       - "traefik.http.routers.traefik-secure.tls.domains[1].main=z-image-cdn.com"
       - "traefik.http.routers.traefik-secure.tls.domains[1].sans=*.z-image-cdn.com"
-      - "traefik.http.routers.fastapi.middlewares=cors"
       - "traefik.http.routers.fastapi.tls.certresolver=letsencrypt"
-      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=*"
-      - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.routers.fastapi.middlewares=cors"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS"
+      - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=https://lephuhung.github.io"
       - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.cors.headers.accesscontrolallowheaders=*"
       - "traefik.http.middlewares.cors.headers.addvaryheader=true"
+
 
   db:
     build: 
@@ -54,10 +56,7 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.middlewares=auth"
       - "traefik.http.middlewares.auth.basicauth.users=testuser:$$apr1$$jIKW.bdS$$eKXe4Lxjgy/rH65wP1iQe1"
-      - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=*"
-      - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*"
-      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
-      - "traefik.http.middlewares.cors.headers.addvaryheader=true"
+
 
 volumes:
   postgres_data_prod:

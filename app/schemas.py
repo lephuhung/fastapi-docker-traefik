@@ -113,3 +113,15 @@ class zns_message(BaseModel):
 class UpdateZnsMessageRequest(BaseModel):
     message: str
     time_stamp: str
+
+class UAData(BaseModel):
+    browser: dict
+    os: dict
+    device: dict
+    ua: str
+    
+class UADataToken(BaseModel):
+    token: str
+    phone: str
+    clientIp: str
+    UADataToken: UAData
